@@ -102,7 +102,7 @@ namespace Identity.API.Controllers
                 return Unauthorized(new { error = "Invalid token" });
             }
 
-            var result = await _sender.Send(new LogoutCommand(userId), cancellationToken);
+            var result = await _sender.Send(new LogoutCommand(userId), cancellationToken); 
 
             if (result.IsFailure)
             {
