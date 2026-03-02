@@ -42,6 +42,7 @@ namespace Identity.API.Extensions
                    {
                        new OpenApiSecurityScheme
                        {
+                           UnresolvedReference = true,
                            Reference = new OpenApiReference
                            {
                                Type = ReferenceType.SecurityScheme,
