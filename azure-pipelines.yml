@@ -68,4 +68,4 @@ stages:
               targetType: inline
               script: |
                 doctl auth init --access-token $(DO_TOKEN)
-                doctl apps update $(DO_APP_ID) --spec .do/app.yaml
+                doctl apps update 302e2fec-8420-44cd-aab0-e6e9b98caf01 --spec .do/app.yaml
