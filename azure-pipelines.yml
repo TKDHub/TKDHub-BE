@@ -1,0 +1,71 @@
+trigger:
+  branches:
+    include:
+      - master
+
+variables:
+  registryEndpoint: registry.digitalocean.com/tkdhub-registry
+  imageRepository: identity-api
+  dockerfilePath: Identity.API/Dockerfile
+  tag: $(Build.BuildId)
+
+stages:
+  - stage: Build
+    displayName: Build & Push Docker Image
+    jobs:
+      - job: BuildAndPush
+        displayName: Build and Push
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: Bash@3
+            displayName: Login to DO Registry
+            inputs:
+              targetType: inline
+              script: |
+                echo "$(DO_TOKEN)" | docker login registry.digitalocean.com -u $(DO_TOKEN) --password-stdin
+
+          - task: Docker@2
+            displayName: Build Image
+            inputs:
+              command: build
+              repository: $(registryEndpoint)/$(imageRepository)
+              dockerfile: $(dockerfilePath)
+              buildContext: $(Build.SourcesDirectory)
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: Push Image
+            inputs:
+              command: push
+              repository: $(registryEndpoint)/$(imageRepository)
+              tags: |
+                $(tag)
+                latest
+
+  - stage: Deploy
+    displayName: Deploy to Digital Ocean App Platform
+    dependsOn: Build
+    jobs:
+      - job: Deploy
+        displayName: Deploy
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: Bash@3
+            displayName: Install doctl
+            inputs:
+              targetType: inline
+              script: |
+                curl -sL https://github.com/digitalocean/doctl/releases/download/v1.153.0/doctl-1.153.0-linux-amd64.tar.gz | tar -xzv
+                sudo mv doctl /usr/local/bin
+
+          - task: Bash@3
+            displayName: Deploy to App Platform
+            inputs:
+              targetType: inline
+              script: |
+                doctl auth init --access-token $(DO_TOKEN)
+                doctl apps update $(DO_APP_ID) --spec .do/app.yaml
