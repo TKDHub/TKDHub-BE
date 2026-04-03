@@ -40,8 +40,11 @@ namespace Identity.API.Extensions
             // Security headers (recommended for production)
             app.UseSecurityHeaders();
 
-            // HTTPS redirection
-            app.UseHttpsRedirection();
+            // HTTPS redirection (disabled in Production — DO handles SSL termination at the edge)
+            if (env.IsDevelopment())
+            {
+                app.UseHttpsRedirection();
+            }
 
             // CORS
             app.UseCors();

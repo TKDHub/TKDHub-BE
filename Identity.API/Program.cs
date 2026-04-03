@@ -16,6 +16,9 @@ app.UseIdentityApiMiddleware(app.Environment);
 // ✅ Map root redirect
 app.MapRootRedirect();
 
+// ✅ Health check endpoint
+app.MapGet("/health", () => Results.Ok("healthy"));
+
 // ✅ Map controllers
 app.MapControllers();
 
