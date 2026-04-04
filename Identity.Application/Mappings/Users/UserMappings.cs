@@ -1,4 +1,4 @@
-﻿using Identity.Application.Dtos.Users;
+using Identity.Application.Dtos.Users;
 using Identity.Application.Models.User;
 using Identity.Domain.Constants;
 using Identity.Domain.Entities;
@@ -55,9 +55,9 @@ namespace Identity.Application.Mappings.Users
                 FullName = user.FullName,
                 Status = (EntityStatusEnum)user.StatusId,
                 EmailConfirmed = user.EmailConfirmed,
-                LastLoginDate = user.LastLoginDate,
-                CreatedOn = user.CreatedOn.UtcDateTime,
-                ModifiedOn = user.ModifiedOn?.UtcDateTime,
+                LastLoginDate = user.LastLoginDate.HasValue ? new DateTimeOffset(user.LastLoginDate.Value, TimeSpan.Zero) : null,
+                CreatedOn = user.CreatedOn,
+                ModifiedOn = user.ModifiedOn,
                 TenantId = user.TenantId
             };
         }

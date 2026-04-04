@@ -1,7 +1,8 @@
-﻿using Identity.Application.Commands.Tenants;
+using Identity.Application.Commands.Tenants;
 using Identity.Application.Models.Tenant;
 using Identity.Application.Queries.Tenants;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
@@ -17,6 +18,7 @@ namespace Identity.API.Controllers
             _sender = sender;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllTenants(CancellationToken cancellationToken)
         {

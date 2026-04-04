@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Identity.Application.Commands.Authentications;
@@ -40,11 +40,8 @@ namespace Identity.API.Extensions
             // Security headers (recommended for production)
             app.UseSecurityHeaders();
 
-            // HTTPS redirection (disabled in Production — DO handles SSL termination at the edge)
-            if (env.IsDevelopment())
-            {
-                app.UseHttpsRedirection();
-            }
+            // HTTPS redirection
+            app.UseHttpsRedirection();
 
             // CORS
             app.UseCors();
@@ -102,7 +99,7 @@ namespace Identity.API.Extensions
             services.AddDomainServices();
 
             // Add CORS
-            services.AddCorsPolicy();
+            services.AddCorsPolicy(configuration);
 
             return services;
         }
@@ -172,15 +169,23 @@ namespace Identity.API.Extensions
         }
 
         /// <summary>
-        /// Configure CORS policy
+        /// Configure CORS policy using specific allowed origins from configuration.
+        /// Falls back to localhost if "AllowedOrigins" is not configured.
         /// </summary>
-        private static IServiceCollection AddCorsPolicy(this IServiceCollection services)
+        private static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
         {
+            var allowedOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>();
+
+            if (allowedOrigins == null || allowedOrigins.Length == 0)
+            {
+                allowedOrigins = new[] { "http://localhost:3000", "https://localhost:3000" };
+            }
+
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.AllowAnyOrigin()
+                    policy.WithOrigins(allowedOrigins)
                           .AllowAnyMethod()
                           .AllowAnyHeader();
                 });
