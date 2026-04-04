@@ -1,6 +1,8 @@
+﻿using System.Xml.Linq;
 using Identity.Application.Dtos.Tenants;
 using Identity.Application.Models.Tenant;
 using Identity.Domain.Entities;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Shared.Domain.Enums;
 
 namespace Identity.Application.Mappings.Tenants
@@ -10,6 +12,20 @@ namespace Identity.Application.Mappings.Tenants
         public static List<TenantDto> ToListDtos(this IEnumerable<Tenant> tenants)
         {
             return tenants.Select(t => t.ToDto()).ToList();
+        }
+        public static TenantDto ToDtos(this Tenant tenant)
+        {
+            return new TenantDto
+            {
+                Id = tenant.Id,
+                Name = tenant.Name,
+                Subdomain = tenant.Subdomain,
+                ContactEmail = tenant.ContactEmail,
+                Status = (EntityStatusEnum)tenant.StatusId,
+                SubscriptionPlan = tenant.SubscriptionPlan,
+                MaxUsers = tenant.MaxUsers,
+                CreatedOn = tenant.CreatedOn.UtcDateTime
+            };
         }
 
         public static TenantDto ToDto(this Tenant tenant)

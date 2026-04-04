@@ -1,4 +1,4 @@
-using Shared.Domain.Enums;
+﻿using Shared.Domain.Enums;
 
 namespace Identity.Application.Dtos.Users
 {
@@ -12,8 +12,8 @@ namespace Identity.Application.Dtos.Users
         public string FullName { get; init; } = string.Empty;
         public EntityStatusEnum Status { get; init; }
         public bool EmailConfirmed { get; init; }
-        public DateTimeOffset? LastLoginDate { get; init; }
-        public DateTimeOffset CreatedOn { get; init; }
-        public DateTimeOffset? ModifiedOn { get; init; }
+        public DateTime? LastLoginDate { get; init; }
+        public DateTime CreatedOn { get; init; }
+        public DateTime? ModifiedOn { get; init; }
     }
 }

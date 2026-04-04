@@ -40,16 +40,16 @@ namespace Identity.Application.Commands.Authentications
                 return Result.Failure<AuthDto>(UserErrors.InvalidCredentials);
             }
 
-            // Check if account is active
-            if (user.StatusId != (short)EntityStatusEnum.Active)
-            {
-                return Result.Failure<AuthDto>(UserErrors.AccountNotActive);
-            }
-
             // Check if account is locked
             if (IsLockedOut(user))
             {
                 return Result.Failure<AuthDto>(UserErrors.AccountLockedOut);
+            }
+
+            // Check if account is active
+            if (user.StatusId != (short)EntityStatusEnum.Active)
+            {
+                return Result.Failure<AuthDto>(UserErrors.AccountNotActive);
             }
 
             // Verify password

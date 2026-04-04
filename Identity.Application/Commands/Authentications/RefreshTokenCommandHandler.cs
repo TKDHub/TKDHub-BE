@@ -26,7 +26,8 @@ namespace Identity.Application.Commands.Authentications
         public async Task<Result<AuthDto>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
         {
             // Find user by refresh token
-            var user = await _userRepository.GetByRefreshTokenAsync(request.RefreshToken, cancellationToken);
+            var users = await _userRepository.GetAllAsync(cancellationToken);
+            var user = users.FirstOrDefault(u => u.RefreshToken == request.RefreshToken);
 
             if (user is null)
             {

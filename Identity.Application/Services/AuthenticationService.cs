@@ -1,4 +1,4 @@
-using Identity.Application.Contracts;
+﻿using Identity.Application.Contracts;
 using Identity.Domain.Entities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -21,7 +21,7 @@ namespace Identity.Application.Services
         {
             _jwtSettings = jwtSettings.Value;
         }
-        public AuthenticationResponse GenerateToken(User user, Tenant? tenant)
+        public AuthenticationResponse GenerateToken(User user, Tenant tenant)
         {
             var claims = new List<Claim>
             {
@@ -29,7 +29,7 @@ namespace Identity.Application.Services
                 new(ClaimTypes.Email, user.Email),
                 new(ClaimTypes.Name, user.FullName),
                 new("TenantId", user.TenantId.ToString()),      // ✅ TenantId in JWT
-                new("TenantName", tenant?.Name ?? string.Empty) // ✅ TenantName in JWT
+                new("TenantName", tenant.Name)                   // ✅ TenantName in JWT
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));

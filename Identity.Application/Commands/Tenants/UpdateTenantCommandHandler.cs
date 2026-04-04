@@ -1,4 +1,4 @@
-using Identity.Application.Dtos.Tenants;
+﻿using Identity.Application.Dtos.Tenants;
 using Identity.Application.Mappings.Tenants;
 using Identity.Application.Models.Tenant;
 using Identity.Domain.Constants;
@@ -33,7 +33,7 @@ namespace Identity.Application.Commands.Tenants
                 return Result.Failure<TenantDto>(TenantErrors.EmailRequired);
             }
 
-            var tenant = await _tenantRepository.GetByIdAsync(request.model.TenantId, cancellationToken);
+            var tenant = await _tenantRepository.GetByIdAsync(request.model.TenentId, cancellationToken);
             if (tenant is null)
             {
                 return Result.Failure<TenantDto>(TenantErrors.NotFound);
