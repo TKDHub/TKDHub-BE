@@ -37,6 +37,11 @@ internal sealed class UserRepository : IUserRepository
         return await _dbContext.Users.Where(u => u.StatusId == (short)EntityStatusEnum.Active).ToListAsync(cancellationToken);
     }
 
+    public async Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.RefreshToken == refreshToken, cancellationToken);
+    }
+
     public async Task<List<User>> GetByRoleAsync(string role, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Users.Where(u => u.StatusId == (short)EntityStatusEnum.Active && u.Roles.Contains(role)).ToListAsync(cancellationToken);

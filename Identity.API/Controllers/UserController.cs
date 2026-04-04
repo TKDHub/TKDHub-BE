@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Identity.Application.Commands.Users;
 using Identity.Application.Dtos.Users;
 using Identity.Application.Models.User;
@@ -34,9 +34,15 @@ namespace Identity.API.Controllers
 
             var result = await _sender.Send(new GetCurrentUserQuery(userId), cancellationToken);
 
+            if (result.IsFailure)
+            {
+                return NotFound(new { error = result.Error.Description });
+            }
+
             return Ok(result.Value);
         }
 
+        [Authorize]
         [HttpGet("GetAllUsers")]
         [ProducesResponseType(typeof(List<UserProfileDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllUsers(CancellationToken cancellationToken)
@@ -46,6 +52,7 @@ namespace Identity.API.Controllers
             return Ok(result.Value);
         }
 
+        [Authorize]
         [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
