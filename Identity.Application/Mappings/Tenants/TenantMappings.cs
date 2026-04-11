@@ -32,14 +32,14 @@ namespace Identity.Application.Mappings.Tenants
             return new Tenant
             {
                 Name = model.Name,
-                Subdomain = model.Subdomain,
-                ContactEmail = model.ContactEmail,
+                Subdomain = model.Subdomain.Trim().ToLowerInvariant(),
+                ContactEmail = model.ContactEmail.Trim().ToLowerInvariant(),
                 StatusId = (short)EntityStatusEnum.Active,
                 SubscriptionPlan = "Free",
                 MaxUsers = 10,
                 CreatedOn = DateTimeOffset.UtcNow,
-                CreatedByName = "Admin",
-                CreatedByEmail = "admin@TKDHub.com",
+                CreatedByEmail = model.CreatedByEmail,
+                CreatedByName = model.CreatedByName,
             };
         }
     }

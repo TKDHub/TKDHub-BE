@@ -76,7 +76,11 @@ public static class UserErrors
         "User.RefreshTokenExpired",
         "Refresh token has expired");
     
-    public static readonly Error UserNotFound = new (
-        "User.NotFound", 
+    public static readonly Error UserNotFound = new(
+        "User.NotFound",
         "User not found");
+
+    public static readonly Error Forbidden = new(
+        "User.Forbidden",
+        "You do not have permission to perform this action");
 }

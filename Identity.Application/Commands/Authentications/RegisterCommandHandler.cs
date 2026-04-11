@@ -5,6 +5,7 @@ using Identity.Application.Models.User;
 using Identity.Domain.Constants;
 using Identity.Domain.Entities;
 using Identity.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 using Shared.Application.Messaging;
 using Shared.Domain.Primitives;
 
@@ -18,38 +19,20 @@ namespace Identity.Application.Commands.Authentications
         private readonly ITenantRepository _tenantRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<RegisterCommandHandler> _logger;
 
-        public RegisterCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher, IUnitOfWork unitOfWork, ITenantRepository tenantRepository)
+        public RegisterCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher, IUnitOfWork unitOfWork, ITenantRepository tenantRepository, ILogger<RegisterCommandHandler> logger)
         {
             _userRepository = userRepository;
             _tenantRepository = tenantRepository;
             _passwordHasher = passwordHasher;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         public async Task<Result<RegisterDto>> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
-            // Verify tenant exists
-            var tenant = await _tenantRepository.GetByIdAsync(request.model.TenantId, cancellationToken);
-
-            if (tenant is null)
-            {
-                return Result.Failure<RegisterDto>(TenantErrors.NotFound);
-            }
-
-            // Check if user already exists
-            var existingUser = await _userRepository.ExistsByEmailAsync(request.model.Email, cancellationToken);
-
-            if (existingUser)
-            {
-                return Result.Failure<RegisterDto>(UserErrors.EmailAlreadyExists);
-            }
-
-            // Hash password
-            var passwordHash = _passwordHasher.HashPassword(request.model.Password);
-            request.model.PasswordHash = passwordHash;
-
-            // Create user
+            // Validate inputs before hitting the database
             if (string.IsNullOrWhiteSpace(request.model.Email))
             {
                 return Result.Failure<RegisterDto>(UserErrors.EmailRequired);
@@ -70,18 +53,39 @@ namespace Identity.Application.Commands.Authentications
                 return Result.Failure<RegisterDto>(UserErrors.LastNameRequired);
             }
 
-            if (string.IsNullOrWhiteSpace(passwordHash))
+            // Normalize email before storing
+            var normalizedEmail = request.model.Email.Trim().ToLowerInvariant();
+
+            // Verify tenant exists
+            var tenant = await _tenantRepository.GetByIdAsync(request.model.TenantId, cancellationToken);
+
+            if (tenant is null)
             {
-                return Result.Failure<RegisterDto>(UserErrors.PasswordRequired);
+                return Result.Failure<RegisterDto>(TenantErrors.NotFound);
             }
+
+            // Check if user already exists
+            var existingUser = await _userRepository.ExistsByEmailAsync(normalizedEmail, cancellationToken);
+
+            if (existingUser)
+            {
+                return Result.Failure<RegisterDto>(UserErrors.EmailAlreadyExists);
+            }
+
+            // Hash password
+            var passwordHash = _passwordHasher.HashPassword(request.model.Password);
+            request.model.PasswordHash = passwordHash;
+
             var user = request.model.ToEntity();
 
             // Add default role
-            AddRole(user, "User");
+            AddRole(user, UserRoles.Default);
 
             // Save user
             _userRepository.Add(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("New user registered with email {Email} under tenant {TenantId}", normalizedEmail, request.model.TenantId);
 
             return Result.Success(user.ToDto());
         }
@@ -91,9 +95,9 @@ namespace Identity.Application.Commands.Authentications
             try
             {
                 var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
+                return addr.Address.Equals(email, StringComparison.OrdinalIgnoreCase);
             }
-            catch
+            catch (FormatException)
             {
                 return false;
             }

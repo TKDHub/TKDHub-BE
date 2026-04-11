@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Identity.Application.Commands.Users;
 using Identity.Application.Dtos.Users;
 using Identity.Application.Models.User;
@@ -6,12 +5,13 @@ using Identity.Application.Queries.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Domain.Pagination;
 
 namespace Identity.API.Controllers
 {
-    [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
-    public class UserController : ControllerBase
+    public class UserController : BaseApiController
     {
         private readonly ISender _sender;
 
@@ -26,39 +26,39 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdClaim, out var userId))
-            {
+            var userId = GetUserIdFromClaims();
+            if (userId == Guid.Empty)
                 return Unauthorized();
-            }
 
             var result = await _sender.Send(new GetCurrentUserQuery(userId), cancellationToken);
 
             if (result.IsFailure)
-            {
                 return NotFound(new { error = result.Error.Description });
-            }
 
             return Ok(result.Value);
         }
 
-        [Authorize]
         [HttpGet("GetAllUsers")]
-        [ProducesResponseType(typeof(List<UserProfileDto>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllUsers(CancellationToken cancellationToken)
+        [ProducesResponseType(typeof(PagedResult<UserProfileDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllUsers([FromQuery] PagedRequest request, CancellationToken cancellationToken = default)
         {
-            var result = await _sender.Send(new GetAllUsersQuery(), cancellationToken);
+            var result = await _sender.Send(new GetAllUsersQuery(request), cancellationToken);
+
+            if (result.IsFailure)
+                return BadRequest(new { error = result.Error.Description });
 
             return Ok(result.Value);
         }
 
-        [Authorize]
         [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetUserById(Guid id, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(new GetUserByIdQuery(id), cancellationToken);
+
+            if (result.IsFailure)
+                return NotFound(new { error = result.Error.Description });
 
             return Ok(result.Value);
         }
@@ -69,35 +69,40 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserModel model, CancellationToken cancellationToken)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdClaim, out var userId))
-            {
+            var userId = GetUserIdFromClaims();
+            if (userId == Guid.Empty)
                 return Unauthorized();
-            }
+
+            model.UserId = userId;
+            model.ModifiedByEmail = GetUserEmailFromClaims();
+            model.ModifiedByName = GetUserNameFromClaims();
 
             var result = await _sender.Send(new UpdateProfileCommand(model), cancellationToken);
 
             if (result.IsFailure)
-            {
                 return BadRequest(new { error = result.Error.Description });
-            }
 
             return Ok(result.Value);
         }
 
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteUser(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new DeleteUserCommand(id), cancellationToken);
+            var requestedByUserId = GetUserIdFromClaims();
+            if (requestedByUserId == Guid.Empty)
+                return Unauthorized();
+
+            var result = await _sender.Send(new DeleteUserCommand(id, requestedByUserId), cancellationToken);
 
             if (result.IsFailure)
-            {
-                return BadRequest(new { error = result.Error.Description });
-            }
+                return result.Error.Code.Contains("Forbidden")
+                    ? Forbid()
+                    : BadRequest(new { error = result.Error.Description });
 
-            return Ok(result.Value);
+            return NoContent();
         }
     }
 }

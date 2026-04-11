@@ -1,7 +1,9 @@
 using Identity.Domain.Entities;
 using Identity.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Shared.Domain.Pagination;
 using Shared.Domain.Enums;
+using Shared.Infrastructure.Extensions;
 
 namespace Identity.Infrastructure.Persistence.Repositories
 {
@@ -29,9 +31,18 @@ namespace Identity.Infrastructure.Persistence.Repositories
             return await _dbContext.Tenants.Where(t => t.StatusId == (short)EntityStatusEnum.Active).OrderBy(t => t.Name).ToListAsync(cancellationToken);
         }
 
+        public async Task<PagedResult<Tenant>> GetPagedAsync(PagedRequest request, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.Tenants
+                .Where(t => t.StatusId == (short)EntityStatusEnum.Active)
+                .ToPagedResultAsync(request, cancellationToken);
+        }
+
         public async Task<bool> ExistsBySubdomainAsync(string subdomain, CancellationToken cancellationToken = default)
         {
-            return await _dbContext.Tenants.AnyAsync(t => t.Subdomain == subdomain.ToLowerInvariant(), cancellationToken);
+            return await _dbContext.Tenants.AnyAsync(
+                t => t.StatusId == (short)EntityStatusEnum.Active && t.Subdomain == subdomain.ToLowerInvariant(),
+                cancellationToken);
         }
 
         public void Add(Tenant tenant)
@@ -42,11 +53,6 @@ namespace Identity.Infrastructure.Persistence.Repositories
         public void Update(Tenant tenant)
         {
             _dbContext.Tenants.Update(tenant);
-        }
-
-        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            return await _dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 }

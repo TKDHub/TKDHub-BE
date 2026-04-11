@@ -1,4 +1,4 @@
-﻿using Identity.Application.Dtos.Users;
+using Identity.Application.Dtos.Users;
 using Identity.Application.Mappings.Users;
 using Identity.Application.Models.User;
 using Identity.Domain.Constants;
@@ -23,18 +23,21 @@ namespace Identity.Application.Commands.Users
 
         public async Task<Result<UserProfileDto>> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
         {
-            // Get updated user
+            if (string.IsNullOrWhiteSpace(request.model.FirstName))
+                return Result.Failure<UserProfileDto>(UserErrors.FirstNameRequired);
+
+            if (string.IsNullOrWhiteSpace(request.model.LastName))
+                return Result.Failure<UserProfileDto>(UserErrors.LastNameRequired);
+
             var user = await _userRepository.GetByIdAsync(request.model.UserId, cancellationToken);
             if (user is null)
-            {
                 return Result.Failure<UserProfileDto>(UserErrors.UserNotFound);
-            }
 
-            user.FirstName = request.model.FirstName;
-            user.LastName = request.model.LastName;
+            user.FirstName = request.model.FirstName.Trim();
+            user.LastName = request.model.LastName.Trim();
             user.ModifiedOn = DateTimeOffset.UtcNow;
-            user.ModifiedByEmail = "admin@TKDHub.com";
-            user.ModifiedByName = "Admin";
+            user.ModifiedByEmail = request.model.ModifiedByEmail;
+            user.ModifiedByName = request.model.ModifiedByName;
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

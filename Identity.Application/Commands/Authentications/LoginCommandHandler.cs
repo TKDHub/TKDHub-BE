@@ -5,6 +5,7 @@ using Identity.Application.Models.Auth;
 using Identity.Domain.Constants;
 using Identity.Domain.Entities;
 using Identity.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 using Shared.Application.Messaging;
 using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
@@ -20,14 +21,16 @@ namespace Identity.Application.Commands.Authentications
         private readonly IPasswordHasher _passwordHasher;
         private readonly IAuthenticationService _authenticationService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<LoginCommandHandler> _logger;
 
-        public LoginCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher, IAuthenticationService authenticationService, IUnitOfWork unitOfWork, ITenantRepository tenantRepository)
+        public LoginCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher, IAuthenticationService authenticationService, IUnitOfWork unitOfWork, ITenantRepository tenantRepository, ILogger<LoginCommandHandler> logger)
         {
             _userRepository = userRepository;
             _tenantRepository = tenantRepository;
             _passwordHasher = passwordHasher;
             _authenticationService = authenticationService;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         public async Task<Result<AuthDto>> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -58,22 +61,29 @@ namespace Identity.Application.Commands.Authentications
                 RecordFailedLoginAttempt(user);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+                _logger.LogWarning("Failed login attempt for email {Email}. Failed attempts: {Count}", request.model.Email, user.FailedLoginAttempts);
                 return Result.Failure<AuthDto>(UserErrors.InvalidCredentials);
             }
 
             var tenant = await _tenantRepository.GetByIdAsync(user.TenantId, cancellationToken);
             if (tenant is null)
             {
+                _logger.LogError("Tenant {TenantId} not found for user {UserId} during login", user.TenantId, user.Id);
                 return Result.Failure<AuthDto>(TenantErrors.NotFound);
             }
+
             // Generate tokens
             var authenticationResponse = _authenticationService.GenerateToken(user, tenant);
 
             // Update user
             RecordSuccessfulLogin(user);
+            user.RefreshToken = authenticationResponse.RefreshToken;
+            user.RefreshTokenExpiryTime = authenticationResponse.ExpiresAt;
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
             // Create response
             var response = user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt);
@@ -85,9 +95,9 @@ namespace Identity.Application.Commands.Authentications
         {
             user.FailedLoginAttempts++;
 
-            if (user.FailedLoginAttempts >= 5)
+            if (user.FailedLoginAttempts >= LoginPolicy.MaxFailedAttempts)
             {
-                user.LockoutEnd = DateTime.UtcNow.AddMinutes(30);
+                user.LockoutEnd = DateTime.UtcNow.AddMinutes(LoginPolicy.LockoutDurationMinutes);
                 return Result.Failure(UserErrors.AccountLockedOut);
             }
 

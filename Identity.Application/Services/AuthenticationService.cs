@@ -32,6 +32,12 @@ namespace Identity.Application.Services
                 new("TenantName", tenant?.Name ?? string.Empty) // ✅ TenantName in JWT
             };
 
+            // Add role claims (supports multiple roles)
+            foreach (var role in user.Roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -68,13 +74,15 @@ namespace Identity.Application.Services
 
         public bool ValidateRefreshToken(string refreshToken)
         {
-            // Basic validation - check if it's a valid base64 string
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return false;
+
             try
             {
-                Convert.FromBase64String(refreshToken);
-                return true;
+                var bytes = Convert.FromBase64String(refreshToken);
+                return bytes.Length > 0;
             }
-            catch
+            catch (FormatException)
             {
                 return false;
             }

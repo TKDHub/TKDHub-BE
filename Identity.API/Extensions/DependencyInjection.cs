@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Identity.Application.Commands.Authentications;
@@ -45,6 +46,9 @@ namespace Identity.API.Extensions
 
             // CORS
             app.UseCors();
+
+            // Rate Limiting
+            app.UseRateLimiter();
 
             // Authentication & Authorization
             app.UseAuthentication();
@@ -100,6 +104,9 @@ namespace Identity.API.Extensions
 
             // Add CORS
             services.AddCorsPolicy(configuration);
+
+            // Add Rate Limiting (brute-force protection on auth endpoints)
+            services.AddRateLimiting();
 
             return services;
         }
@@ -189,6 +196,31 @@ namespace Identity.API.Extensions
                           .AllowAnyMethod()
                           .AllowAnyHeader();
                 });
+            });
+
+            return services;
+        }
+
+        /// <summary>
+        /// Add rate limiting to protect auth endpoints from brute-force attacks.
+        /// Allows 10 requests per minute per IP on auth endpoints.
+        /// </summary>
+        private static IServiceCollection AddRateLimiting(this IServiceCollection services)
+        {
+            services.AddRateLimiter(options =>
+            {
+                options.AddPolicy("AuthPolicy", context =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 10,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             });
 
             return services;

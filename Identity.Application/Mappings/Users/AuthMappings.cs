@@ -16,8 +16,8 @@ namespace Identity.Application.Mappings.Users
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
+                AccessToken = accessToken ?? string.Empty,
+                RefreshToken = refreshToken ?? string.Empty,
                 ExpiresAt = expiresAt,
                 Roles = user.Roles,
             };

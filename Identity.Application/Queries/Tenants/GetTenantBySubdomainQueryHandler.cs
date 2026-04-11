@@ -1,4 +1,4 @@
-﻿using Identity.Application.Dtos.Tenants;
+using Identity.Application.Dtos.Tenants;
 using Identity.Application.Mappings.Tenants;
 using Identity.Domain.Constants;
 using Identity.Domain.Repositories;
@@ -7,20 +7,21 @@ using Shared.Domain.Primitives;
 
 namespace Identity.Application.Queries.Tenants
 {
-    public sealed record GetTenentByIdQuery(Guid tenentId) : IQuery<TenantDto>;
+    public sealed record GetTenantBySubdomainQuery(string Subdomain) : IQuery<TenantDto>;
 
-    internal sealed class GetTenentByIdQueryHandler : IQueryHandler<GetTenentByIdQuery, TenantDto>
+    internal sealed class GetTenantBySubdomainQueryHandler : IQueryHandler<GetTenantBySubdomainQuery, TenantDto>
     {
         private readonly ITenantRepository _tenantRepository;
 
-        public GetTenentByIdQueryHandler( ITenantRepository tenantRepository)
+        public GetTenantBySubdomainQueryHandler(ITenantRepository tenantRepository)
         {
             _tenantRepository = tenantRepository;
         }
 
-        public async Task<Result<TenantDto>> Handle(GetTenentByIdQuery query, CancellationToken cancellationToken)
+        public async Task<Result<TenantDto>> Handle(GetTenantBySubdomainQuery query, CancellationToken cancellationToken)
         {
-            var tenant = await _tenantRepository.GetByIdAsync(query.tenentId, cancellationToken);
+            var tenant = await _tenantRepository.GetBySubdomainAsync(query.Subdomain, cancellationToken);
+
             if (tenant is null)
             {
                 return Result.Failure<TenantDto>(TenantErrors.NotFound);

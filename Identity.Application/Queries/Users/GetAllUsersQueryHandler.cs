@@ -2,13 +2,14 @@
 using Identity.Application.Mappings.Users;
 using Identity.Domain.Repositories;
 using Shared.Application.Messaging;
+using Shared.Domain.Pagination;
 using Shared.Domain.Primitives;
 
 namespace Identity.Application.Queries.Users
 {
-    public sealed record GetAllUsersQuery() : IQuery<List<UserProfileDto>>;
+    public sealed record GetAllUsersQuery(PagedRequest Request) : IQuery<PagedResult<UserProfileDto>>;
 
-    internal sealed class GetAllUsersQueryHandler : IQueryHandler<GetAllUsersQuery, List<UserProfileDto>>
+    internal sealed class GetAllUsersQueryHandler : IQueryHandler<GetAllUsersQuery, PagedResult<UserProfileDto>>
     {
         private readonly IUserRepository _userRepository;
 
@@ -17,11 +18,15 @@ namespace Identity.Application.Queries.Users
             _userRepository = userRepository;
         }
 
-        public async Task<Result<List<UserProfileDto>>> Handle(GetAllUsersQuery query, CancellationToken cancellationToken)
+        public async Task<Result<PagedResult<UserProfileDto>>> Handle(GetAllUsersQuery query, CancellationToken cancellationToken)
         {
-            var users = await _userRepository.GetAllAsync(cancellationToken);
+            var result = await _userRepository.GetPagedAsync(query.Request, cancellationToken);
 
-            return Result.Success(users.ToListModels());
+            return Result.Success(PagedResult<UserProfileDto>.Create(
+                result.Items.ToListModels(),
+                result.TotalCount,
+                result.Page,
+                result.PageSize));
         }
     }
 }

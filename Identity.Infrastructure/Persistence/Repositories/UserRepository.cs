@@ -1,7 +1,9 @@
 using Identity.Domain.Entities;
 using Identity.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Shared.Domain.Pagination;
 using Shared.Domain.Enums;
+using Shared.Infrastructure.Extensions;
 
 namespace Identity.Infrastructure.Persistence.Repositories;
 
@@ -35,6 +37,13 @@ internal sealed class UserRepository : IUserRepository
     public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _dbContext.Users.Where(u => u.StatusId == (short)EntityStatusEnum.Active).ToListAsync(cancellationToken);
+    }
+
+    public async Task<PagedResult<User>> GetPagedAsync(PagedRequest request, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .Where(u => u.StatusId == (short)EntityStatusEnum.Active)
+            .ToPagedResultAsync(request, cancellationToken);
     }
 
     public async Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
