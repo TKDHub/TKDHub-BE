@@ -2,7 +2,8 @@
 {
     public sealed record AuthModel
     {
-        public string Email { get; init; } = string.Empty;
+        /// <summary>Username (email address used as login identifier)</summary>
+        public string Username { get; init; } = string.Empty;
         public string Password { get; init; } = string.Empty;
     }
 }

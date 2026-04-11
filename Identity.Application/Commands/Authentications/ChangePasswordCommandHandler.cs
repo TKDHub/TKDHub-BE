@@ -34,7 +34,7 @@ namespace Identity.Application.Commands.Authentications
                 return Result.Failure(UserErrors.UserNotFound);
 
             // Verify current password
-            if (!_passwordHasher.VerifyPassword(request.model.CurrentPassword, user.PasswordHash))
+            if (!_passwordHasher.VerifyPassword(request.model.OldPassword, user.PasswordHash))
             {
                 _logger.LogWarning("Password change failed — incorrect current password for user {UserId}", request.model.UserId);
                 return Result.Failure(UserErrors.InvalidCredentials);

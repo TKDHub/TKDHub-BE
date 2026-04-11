@@ -1,6 +1,7 @@
 using Identity.Application.Contracts;
 using Identity.Application.Dtos.Users;
 using Identity.Application.Mappings.Users;
+using Identity.Application.Models.Auth;
 using Identity.Domain.Constants;
 using Identity.Domain.Repositories;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,7 @@ using Shared.Domain.Primitives;
 
 namespace Identity.Application.Commands.Authentications
 {
-    public sealed record RefreshTokenCommand(string RefreshToken) : ICommand<AuthDto>;
+    public sealed record RefreshTokenCommand(RefreshTokenModel model) : ICommand<AuthDto>;
 
     internal sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCommand, AuthDto>
     {
@@ -31,14 +32,14 @@ namespace Identity.Application.Commands.Authentications
         public async Task<Result<AuthDto>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
         {
             // Validate token format before hitting the database
-            if (!_authenticationService.ValidateRefreshToken(request.RefreshToken))
+            if (!_authenticationService.ValidateRefreshToken(request.model.RefreshToken))
             {
                 _logger.LogWarning("Refresh token attempt with malformed token");
                 return Result.Failure<AuthDto>(UserErrors.InvalidRefreshToken);
             }
 
             // Find user by refresh token
-            var user = await _userRepository.GetByRefreshTokenAsync(request.RefreshToken, cancellationToken);
+            var user = await _userRepository.GetByRefreshTokenAsync(request.model.RefreshToken, cancellationToken);
 
             if (user is null)
             {

@@ -6,6 +6,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+#pragma warning disable CS0618 // Keep legacy controller for backward compatibility
 
 namespace Identity.API.Controllers
 {
@@ -54,9 +55,9 @@ namespace Identity.API.Controllers
         [ProducesResponseType(typeof(AuthDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-        public async Task<IActionResult> RefreshToken([FromBody] string refreshToken, CancellationToken cancellationToken)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new RefreshTokenCommand(refreshToken), cancellationToken);
+            var result = await _sender.Send(new RefreshTokenCommand(model), cancellationToken);
 
             if (result.IsFailure)
                 return Unauthorized(new { error = result.Error.Description });

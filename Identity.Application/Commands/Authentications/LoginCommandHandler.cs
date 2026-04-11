@@ -35,8 +35,8 @@ namespace Identity.Application.Commands.Authentications
 
         public async Task<Result<AuthDto>> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
-            // Get user by email
-            var user = await _userRepository.GetByEmailAsync(request.model.Email, cancellationToken);
+            // Username is the email address (login identifier)
+            var user = await _userRepository.GetByEmailAsync(request.model.Username, cancellationToken);
 
             if (user is null)
             {
@@ -61,7 +61,7 @@ namespace Identity.Application.Commands.Authentications
                 RecordFailedLoginAttempt(user);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                _logger.LogWarning("Failed login attempt for email {Email}. Failed attempts: {Count}", request.model.Email, user.FailedLoginAttempts);
+                _logger.LogWarning("Failed login attempt for username {Username}. Failed attempts: {Count}", request.model.Username, user.FailedLoginAttempts);
                 return Result.Failure<AuthDto>(UserErrors.InvalidCredentials);
             }
 
