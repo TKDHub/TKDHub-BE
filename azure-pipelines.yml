@@ -1,7 +1,4 @@
-trigger:
-  branches:
-    include:
-      - master
+trigger: none
 
 variables:
   registryEndpoint: registry.digitalocean.com/tkdhub-registry
