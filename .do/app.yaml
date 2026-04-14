@@ -1,9 +1,5 @@
 name: tkdhub-identity
 region: nyc
-domains:
-  - domain: tkdhub.com
-    type: PRIMARY
-
 services:
   - name: identity-api
     image:
