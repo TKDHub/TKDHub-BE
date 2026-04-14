@@ -1,0 +1,50 @@
+name: Build & Deploy to DigitalOcean
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to DigitalOcean Registry
+        run: echo "${{ secrets.DO_TOKEN }}" | docker login registry.digitalocean.com -u "${{ secrets.DO_TOKEN }}" --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f Identity.API/Dockerfile \
+            -t registry.digitalocean.com/tkdhub-registry/identity-api:${{ github.run_number }} \
+            -t registry.digitalocean.com/tkdhub-registry/identity-api:latest \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push registry.digitalocean.com/tkdhub-registry/identity-api:${{ github.run_number }}
+          docker push registry.digitalocean.com/tkdhub-registry/identity-api:latest
+
+  deploy:
+    name: Deploy to App Platform
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_TOKEN }}
+
+      - name: Update App Platform spec
+        run: doctl apps update 302e2fec-8420-44cd-aab0-e6e9b98caf01 --spec .do/app.yaml

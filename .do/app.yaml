@@ -20,5 +20,5 @@ services:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       - key: ConnectionStrings__IdentityDatabase
-        value: "Host=tkdhub-db-do-user-34610403-0.d.db.ondigitalocean.com;Port=25060;Database=IdentityDb;Username=doadmin;Password=AVNS_cPQAAJo88QbYqmhLbrz;SSL Mode=Require;Trust Server Certificate=true"
+        value: ${CONNECTION_STRING}
         type: SECRET
