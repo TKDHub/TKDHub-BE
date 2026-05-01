@@ -38,13 +38,10 @@ jobs:
     if: github.ref == 'refs/heads/master'
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DO_TOKEN }}
 
-      - name: Update App Platform spec
-        run: doctl apps update 302e2fec-8420-44cd-aab0-e6e9b98caf01 --spec .do/app.yaml
+      - name: Trigger deployment with new image
+        run: doctl apps create-deployment 302e2fec-8420-44cd-aab0-e6e9b98caf01 --force-rebuild
