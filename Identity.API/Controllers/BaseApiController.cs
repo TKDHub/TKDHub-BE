@@ -25,6 +25,12 @@ namespace Identity.API.Controllers
         /// <summary>
         /// Extracts the authenticated user's email from JWT claims.
         /// </summary>
+        protected Guid GetTenantIdFromClaims()
+        {
+            var claim = User.FindFirstValue("TenantId");
+            return Guid.TryParse(claim, out var tenantId) ? tenantId : Guid.Empty;
+        }
+
         protected string GetUserEmailFromClaims()
             => User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
 

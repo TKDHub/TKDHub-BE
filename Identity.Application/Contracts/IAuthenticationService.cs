@@ -2,10 +2,7 @@ using Identity.Domain.Entities;
 
 namespace Identity.Application.Contracts
 {
-    /// <summary>
-    /// Authentication service interface for JWT token operations
-    /// </summary>
-    public sealed record AuthenticationResponse(Guid UserId, string Email, string FirstName, string LastName, string AccessToken, string RefreshToken, DateTime ExpiresAt);
+    public sealed record AuthenticationResponse(Guid UserId, string Username, string Email, string AccessToken, string RefreshToken, DateTime ExpiresAt);
 
     public interface IAuthenticationService
     {

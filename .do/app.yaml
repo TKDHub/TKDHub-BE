@@ -18,3 +18,29 @@ services:
       - key: ConnectionStrings__IdentityDatabase
         value: "Host=tkdhub-db-do-user-34610403-0.d.db.ondigitalocean.com;Port=25060;Database=IdentityDb;Username=doadmin;Password=AVNS_cPQAAJo88QbYqmhLbrz;SSL Mode=Require;Trust Server Certificate=true"
         type: SECRET
+      - key: JwtSettings__Secret
+        type: SECRET
+      - key: JwtSettings__Issuer
+        value: "IdentityAPI-Prod"
+      - key: JwtSettings__Audience
+        value: "MicroservicesUsers-Prod"
+      - key: JwtSettings__ExpiryMinutes
+        value: "60"
+      - key: RestKeySettings__Key
+        type: SECRET
+      - key: RestKeySettings__HeaderName
+        value: "X-Rest-Key"
+      - key: SmtpSettings__Host
+        value: "smtp.gmail.com"
+      - key: SmtpSettings__Port
+        value: "587"
+      - key: SmtpSettings__Username
+        type: SECRET
+      - key: SmtpSettings__Password
+        type: SECRET
+      - key: SmtpSettings__FromEmail
+        type: SECRET
+      - key: SmtpSettings__FromName
+        value: "TKDHub"
+      - key: SmtpSettings__UseSsl
+        value: "true"

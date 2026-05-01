@@ -1,4 +1,5 @@
 using Identity.Application.Dtos.Tenants;
+using Identity.Application.Mappings.Branches;
 using Identity.Application.Models.Tenant;
 using Identity.Domain.Entities;
 using Shared.Domain.Enums;
@@ -23,7 +24,8 @@ namespace Identity.Application.Mappings.Tenants
                 Status = (EntityStatusEnum)tenant.StatusId,
                 SubscriptionPlan = tenant.SubscriptionPlan,
                 MaxUsers = tenant.MaxUsers,
-                CreatedOn = tenant.CreatedOn.UtcDateTime
+                CreatedOn = tenant.CreatedOn.UtcDateTime,
+                Branches = tenant.Branches?.ToListDtos() ?? new()
             };
         }
 

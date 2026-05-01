@@ -10,9 +10,6 @@ using System.Text;
 
 namespace Identity.Application.Services
 {
-    /// <summary>
-    /// Authentication service implementation with JWT
-    /// </summary>
     public sealed class AuthenticationService : IAuthenticationService
     {
         private readonly JwtSettings _jwtSettings;
@@ -21,27 +18,29 @@ namespace Identity.Application.Services
         {
             _jwtSettings = jwtSettings.Value;
         }
+
         public AuthenticationResponse GenerateToken(User user, Tenant? tenant)
         {
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Name, user.Username),
                 new(ClaimTypes.Email, user.Email),
-                new(ClaimTypes.Name, user.FullName),
-                new("TenantId", user.TenantId.ToString()),      // ✅ TenantId in JWT
-                new("TenantName", tenant?.Name ?? string.Empty) // ✅ TenantName in JWT
+                new("TenantId", user.TenantId.ToString()),
+                new("TenantName", tenant?.Name ?? string.Empty)
             };
 
-            // Add role claims (supports multiple roles)
-            foreach (var role in user.Roles)
+            foreach (var userRole in user.UserRoles)
+                claims.Add(new Claim(ClaimTypes.Role, userRole.RoleId.ToString()));
+
+            foreach (var branch in user.Branches)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                claims.Add(new Claim("BranchId", branch.Id.ToString()));
+                claims.Add(new Claim("BranchName", branch.Name));
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
-
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
             var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes);
 
             var token = new JwtSecurityToken(
@@ -54,14 +53,7 @@ namespace Identity.Application.Services
             var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
             var refreshToken = GenerateRefreshToken();
 
-            return new AuthenticationResponse(
-                user.Id,
-                user.Email,
-                user.FirstName,
-                user.LastName,
-                accessToken,
-                refreshToken,
-                expiresAt);
+            return new AuthenticationResponse(user.Id, user.Username, user.Email, accessToken, refreshToken, expiresAt);
         }
 
         public string GenerateRefreshToken()

@@ -1,5 +1,6 @@
 using Identity.Application.Contracts;
 using Identity.Application.Dtos.Users;
+using Identity.Application.Mappings.Tenants;
 using Identity.Application.Mappings.Users;
 using Identity.Application.Models.Auth;
 using Identity.Domain.Constants;
@@ -74,7 +75,7 @@ namespace Identity.Application.Commands.Authentications
 
             _logger.LogInformation("Token refreshed successfully for user {UserId}", user.Id);
 
-            return Result.Success(user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt));
+            return Result.Success(user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt, tenant.ToDto()));
         }
     }
 }

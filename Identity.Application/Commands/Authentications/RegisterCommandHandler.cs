@@ -1,9 +1,11 @@
 using Identity.Application.Contracts;
 using Identity.Application.Dtos.Users;
+using Identity.Application.Mappings.Tenants;
 using Identity.Application.Mappings.Users;
 using Identity.Application.Models.User;
 using Identity.Domain.Constants;
 using Identity.Domain.Entities;
+using Identity.Domain.Enums;
 using Identity.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Messaging;
@@ -17,14 +19,22 @@ namespace Identity.Application.Commands.Authentications
     {
         private readonly IUserRepository _userRepository;
         private readonly ITenantRepository _tenantRepository;
+        private readonly IBranchRepository _branchRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<RegisterCommandHandler> _logger;
 
-        public RegisterCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher, IUnitOfWork unitOfWork, ITenantRepository tenantRepository, ILogger<RegisterCommandHandler> logger)
+        public RegisterCommandHandler(
+            IUserRepository userRepository,
+            ITenantRepository tenantRepository,
+            IBranchRepository branchRepository,
+            IPasswordHasher passwordHasher,
+            IUnitOfWork unitOfWork,
+            ILogger<RegisterCommandHandler> logger)
         {
             _userRepository = userRepository;
             _tenantRepository = tenantRepository;
+            _branchRepository = branchRepository;
             _passwordHasher = passwordHasher;
             _unitOfWork = unitOfWork;
             _logger = logger;
@@ -32,65 +42,57 @@ namespace Identity.Application.Commands.Authentications
 
         public async Task<Result<RegisterDto>> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
-            // Validate inputs before hitting the database
+            if (string.IsNullOrWhiteSpace(request.model.Username))
+                return Result.Failure<RegisterDto>(UserErrors.UsernameRequired);
+
             if (string.IsNullOrWhiteSpace(request.model.Email))
-            {
                 return Result.Failure<RegisterDto>(UserErrors.EmailRequired);
-            }
 
             if (!IsValidEmail(request.model.Email))
-            {
                 return Result.Failure<RegisterDto>(UserErrors.InvalidEmailFormat);
-            }
 
-            if (string.IsNullOrWhiteSpace(request.model.FirstName))
-            {
-                return Result.Failure<RegisterDto>(UserErrors.FirstNameRequired);
-            }
-
-            if (string.IsNullOrWhiteSpace(request.model.LastName))
-            {
-                return Result.Failure<RegisterDto>(UserErrors.LastNameRequired);
-            }
-
-            // Normalize email before storing
-            var normalizedEmail = request.model.Email.Trim().ToLowerInvariant();
-
-            // Verify tenant exists
             var tenant = await _tenantRepository.GetByIdAsync(request.model.TenantId, cancellationToken);
-
             if (tenant is null)
-            {
                 return Result.Failure<RegisterDto>(TenantErrors.NotFound);
-            }
 
-            // Check if user already exists
-            var existingUser = await _userRepository.ExistsByEmailAsync(normalizedEmail, cancellationToken);
+            var usernameExists = await _userRepository.ExistsByUsernameAsync(request.model.Username, cancellationToken);
+            if (usernameExists)
+                return Result.Failure<RegisterDto>(UserErrors.UsernameAlreadyExists);
 
-            if (existingUser)
-            {
+            var emailExists = await _userRepository.ExistsByEmailAsync(request.model.Email.Trim().ToLowerInvariant(), cancellationToken);
+            if (emailExists)
                 return Result.Failure<RegisterDto>(UserErrors.EmailAlreadyExists);
-            }
 
-            // Hash password
-            var passwordHash = _passwordHasher.HashPassword(request.model.Password);
-            request.model.PasswordHash = passwordHash;
+            request.model.PasswordHash = _passwordHasher.HashPassword(request.model.Password);
 
             var user = request.model.ToEntity();
 
-            // Add default role
-            AddRole(user, UserRoles.Default);
+            var roles = request.model.Roles.Count > 0
+                ? request.model.Roles
+                : new List<UserRoleEnum> { UserRoleEnum.Student };
 
-            // Save user
+            foreach (var roleId in roles)
+                user.UserRoles.Add(new UserRole { RoleId = roleId });
+
+            if (request.model.BranchIds.Count > 0)
+            {
+                foreach (var branchId in request.model.BranchIds)
+                {
+                    var branch = await _branchRepository.GetByIdAsync(branchId, cancellationToken);
+                    if (branch is not null)
+                        user.Branches.Add(branch);
+                }
+            }
+
             _userRepository.Add(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("New user registered with email {Email} under tenant {TenantId}", normalizedEmail, request.model.TenantId);
+            _logger.LogInformation("New user registered: {Username} under tenant {TenantId}", user.Username, user.TenantId);
 
-            return Result.Success(user.ToDto());
+            return Result.Success(user.ToDto(tenant.ToDto()));
         }
 
-        public bool IsValidEmail(string email)
+        private static bool IsValidEmail(string email)
         {
             try
             {
@@ -101,22 +103,6 @@ namespace Identity.Application.Commands.Authentications
             {
                 return false;
             }
-        }
-
-        public Result AddRole(User user, string role)
-        {
-            if (string.IsNullOrWhiteSpace(role))
-            {
-                return Result.Failure(UserErrors.InvalidRole);
-            }
-
-            if (user.Roles.Contains(role, StringComparer.OrdinalIgnoreCase))
-            {
-                return Result.Failure(UserErrors.RoleAlreadyAssigned);
-            }
-
-            user.AddRoleInternal(role);
-            return Result.Success();
         }
     }
 }

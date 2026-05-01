@@ -32,7 +32,7 @@ namespace Identity.Application.Commands.Tenants
             if (string.IsNullOrWhiteSpace(request.model.ContactEmail))
                 return Result.Failure<TenantDto>(TenantErrors.EmailRequired);
 
-            var tenant = await _tenantRepository.GetByIdAsync(request.model.TenantId, cancellationToken);
+            var tenant = await _tenantRepository.GetByIdIgnoringFiltersAsync(request.model.TenantId, cancellationToken);
             if (tenant is null)
                 return Result.Failure<TenantDto>(TenantErrors.NotFound);
 

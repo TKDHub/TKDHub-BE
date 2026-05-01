@@ -9,7 +9,7 @@ namespace Identity.Application.Validators.Users
         {
             RuleFor(x => x.Username)
                 .NotEmpty().WithMessage("Username is required")
-                .EmailAddress().WithMessage("Username must be a valid email address");
+                .MaximumLength(150).WithMessage("Username must not exceed 150 characters");
 
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage("Password is required");

@@ -1,6 +1,9 @@
+using Identity.Application.Contracts;
 using Identity.Domain.Repositories;
 using Identity.Infrastructure.Persistence;
 using Identity.Infrastructure.Persistence.Repositories;
+using Identity.Infrastructure.Services;
+using Identity.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +24,7 @@ namespace Identity.Infrastructure
 
             services.AddScoped<ITenantRepository, TenantRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IBranchRepository, BranchRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IErrorLogRepository>(provider =>
             {
@@ -28,7 +32,11 @@ namespace Identity.Infrastructure
                 return new ErrorLogRepository(dbContext);
             });
             
-            // JWT Settings
+            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IOtpService, OtpService>();
+
+            // Settings
+            services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
             return services;

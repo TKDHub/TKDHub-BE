@@ -23,18 +23,23 @@ namespace Identity.Application.Commands.Users
 
         public async Task<Result<UserProfileDto>> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(request.model.FirstName))
-                return Result.Failure<UserProfileDto>(UserErrors.FirstNameRequired);
-
-            if (string.IsNullOrWhiteSpace(request.model.LastName))
-                return Result.Failure<UserProfileDto>(UserErrors.LastNameRequired);
+            if (string.IsNullOrWhiteSpace(request.model.Username))
+                return Result.Failure<UserProfileDto>(UserErrors.UsernameRequired);
 
             var user = await _userRepository.GetByIdAsync(request.model.UserId, cancellationToken);
             if (user is null)
                 return Result.Failure<UserProfileDto>(UserErrors.UserNotFound);
 
-            user.FirstName = request.model.FirstName.Trim();
-            user.LastName = request.model.LastName.Trim();
+            var newUsername = request.model.Username.Trim();
+            if (!string.Equals(user.Username, newUsername, StringComparison.OrdinalIgnoreCase))
+            {
+                var taken = await _userRepository.ExistsByUsernameAsync(newUsername, cancellationToken);
+                if (taken)
+                    return Result.Failure<UserProfileDto>(UserErrors.UsernameAlreadyExists);
+            }
+
+            user.Username = newUsername;
+            user.PhoneNumber = request.model.PhoneNumber?.Trim();
             user.ModifiedOn = DateTimeOffset.UtcNow;
             user.ModifiedByEmail = request.model.ModifiedByEmail;
             user.ModifiedByName = request.model.ModifiedByName;

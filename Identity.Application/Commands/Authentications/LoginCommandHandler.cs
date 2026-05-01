@@ -1,5 +1,6 @@
 using Identity.Application.Contracts;
 using Identity.Application.Dtos.Users;
+using Identity.Application.Mappings.Tenants;
 using Identity.Application.Mappings.Users;
 using Identity.Application.Models.Auth;
 using Identity.Domain.Constants;
@@ -35,8 +36,9 @@ namespace Identity.Application.Commands.Authentications
 
         public async Task<Result<AuthDto>> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
-            // Username is the email address (login identifier)
-            var user = await _userRepository.GetByEmailAsync(request.model.Username, cancellationToken);
+            var identifier = request.model.Username.Trim();
+            var user = await _userRepository.GetByUsernameAsync(identifier, cancellationToken)
+                       ?? await _userRepository.GetByEmailAsync(identifier, cancellationToken);
 
             if (user is null)
             {
@@ -86,7 +88,7 @@ namespace Identity.Application.Commands.Authentications
             _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
             // Create response
-            var response = user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt);
+            var response = user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt, tenant.ToDto());
 
             return Result.Success(response);
         }

@@ -2,7 +2,7 @@ using Identity.Application.Dtos.Users;
 using Identity.Application.Mappings.Users;
 using Identity.Application.Models.User;
 using Identity.Domain.Constants;
-using Identity.Domain.Enums;
+using Identity.Domain.Entities;
 using Identity.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Messaging;
@@ -35,7 +35,6 @@ namespace Identity.Application.Commands.Users
             if (user is null)
                 return Result.Failure<UserProfileDto>(UserErrors.UserNotFound);
 
-            // Update email if provided and changed
             if (!string.IsNullOrWhiteSpace(request.model.Email))
             {
                 var normalizedEmail = request.model.Email.Trim().ToLowerInvariant();
@@ -49,7 +48,6 @@ namespace Identity.Application.Commands.Users
                 }
             }
 
-            // Update active status
             if (request.model.Active.HasValue)
             {
                 user.StatusId = request.model.Active.Value
@@ -57,19 +55,14 @@ namespace Identity.Application.Commands.Users
                     : (short)EntityStatusEnum.Inactive;
             }
 
-            // Update phone number
             if (request.model.PhoneNumber is not null)
                 user.PhoneNumber = request.model.PhoneNumber.Trim();
 
-            // Update role based on actor type
-            if (request.model.Actor.HasValue)
+            if (request.model.Roles.Count > 0)
             {
-                var roleName = request.model.Actor.Value.ToString();
-                if (!user.Roles.Contains(roleName, StringComparer.OrdinalIgnoreCase))
-                {
-                    user.RemoveRoleInternal(user.Roles.FirstOrDefault() ?? string.Empty);
-                    user.AddRoleInternal(roleName);
-                }
+                user.UserRoles.Clear();
+                foreach (var roleId in request.model.Roles)
+                    user.UserRoles.Add(new UserRole { RoleId = roleId });
             }
 
             user.ModifiedOn = DateTimeOffset.UtcNow;

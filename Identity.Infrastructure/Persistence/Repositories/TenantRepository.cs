@@ -18,12 +18,24 @@ namespace Identity.Infrastructure.Persistence.Repositories
 
         public async Task<Tenant?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            return await _dbContext.Tenants.FirstOrDefaultAsync(t => t.StatusId == (short)EntityStatusEnum.Active && t.Id == id, cancellationToken);
+            return await _dbContext.Tenants
+                .Include(t => t.Branches.Where(b => b.StatusId == (short)EntityStatusEnum.Active))
+                .FirstOrDefaultAsync(t => t.StatusId == (short)EntityStatusEnum.Active && t.Id == id, cancellationToken);
+        }
+
+        public async Task<Tenant?> GetByIdIgnoringFiltersAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.Tenants
+                .IgnoreQueryFilters()
+                .Include(t => t.Branches.Where(b => b.StatusId == (short)EntityStatusEnum.Active))
+                .FirstOrDefaultAsync(t => t.StatusId == (short)EntityStatusEnum.Active && t.Id == id, cancellationToken);
         }
 
         public async Task<Tenant?> GetBySubdomainAsync(string subdomain, CancellationToken cancellationToken = default)
         {
-            return await _dbContext.Tenants.FirstOrDefaultAsync(t => t.StatusId == (short)EntityStatusEnum.Active && t.Subdomain == subdomain.ToLowerInvariant(), cancellationToken);
+            return await _dbContext.Tenants
+                .Include(t => t.Branches.Where(b => b.StatusId == (short)EntityStatusEnum.Active))
+                .FirstOrDefaultAsync(t => t.StatusId == (short)EntityStatusEnum.Active && t.Subdomain == subdomain.ToLowerInvariant(), cancellationToken);
         }
 
         public async Task<List<Tenant>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -51,6 +63,11 @@ namespace Identity.Infrastructure.Persistence.Repositories
         }
 
         public void Update(Tenant tenant)
+        {
+            _dbContext.Tenants.Update(tenant);
+        }
+
+        public void Remove(Tenant tenant)
         {
             _dbContext.Tenants.Update(tenant);
         }

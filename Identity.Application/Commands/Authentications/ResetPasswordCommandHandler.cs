@@ -8,9 +8,9 @@ using Shared.Domain.Primitives;
 
 namespace Identity.Application.Commands.Authentications
 {
-    public sealed record ResetPasswordCommand(ResetPasswordModel model) : ICommand;
+    public sealed record ResetPasswordCommand(ResetPasswordModel model) : ICommand<string>;
 
-    internal sealed class ResetPasswordCommandHandler : ICommandHandler<ResetPasswordCommand>
+    internal sealed class ResetPasswordCommandHandler : ICommandHandler<ResetPasswordCommand, string>
     {
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
@@ -29,37 +29,29 @@ namespace Identity.Application.Commands.Authentications
             _logger = logger;
         }
 
-        public async Task<Result> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
+        public async Task<Result<string>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(request.model.Email))
-                return Result.Failure(UserErrors.EmailRequired);
-
-            if (string.IsNullOrWhiteSpace(request.model.ResetKey))
-                return Result.Failure(UserErrors.InvalidRefreshToken);
-
             if (string.IsNullOrWhiteSpace(request.model.NewPassword))
-                return Result.Failure(UserErrors.PasswordRequired);
+                return Result.Failure<string>(UserErrors.PasswordRequired);
 
-            var normalizedEmail = request.model.Email.Trim().ToLowerInvariant();
-            var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
+            if (request.model.NewPassword != request.model.ConfirmPassword)
+                return Result.Failure<string>(UserErrors.PasswordMismatch);
+
+            var identifier = request.model.Identifier.Trim();
+
+            var user = await _userRepository.GetByEmailAsync(identifier, cancellationToken)
+                    ?? await _userRepository.GetByPhoneAsync(identifier, cancellationToken);
 
             if (user is null)
-                return Result.Failure(UserErrors.UserNotFound);
+                return Result.Failure<string>(UserErrors.UserNotFound);
 
-            // Validate the reset key
-            if (user.PasswordResetToken is null ||
-                !user.PasswordResetToken.Equals(request.model.ResetKey, StringComparison.Ordinal))
+            // PasswordResetToken must be a UUID (swapped in after OTP verification) and not expired
+            if (user.PasswordResetToken is null
+                || !Guid.TryParse(user.PasswordResetToken, out _)
+                || user.PasswordResetTokenExpiryTime is null
+                || user.PasswordResetTokenExpiryTime < DateTime.UtcNow)
             {
-                _logger.LogWarning("Invalid password reset key for user {Email}", normalizedEmail);
-                return Result.Failure(UserErrors.InvalidRefreshToken);
-            }
-
-            // Check reset key expiry
-            if (user.PasswordResetTokenExpiryTime.HasValue &&
-                user.PasswordResetTokenExpiryTime.Value < DateTime.UtcNow)
-            {
-                _logger.LogWarning("Expired password reset key for user {Email}", normalizedEmail);
-                return Result.Failure(UserErrors.RefreshTokenExpired);
+                return Result.Failure<string>(OtpErrors.NotVerified);
             }
 
             user.PasswordHash = _passwordHasher.HashPassword(request.model.NewPassword);
@@ -70,9 +62,9 @@ namespace Identity.Application.Commands.Authentications
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Password reset successfully for user {Email}", normalizedEmail);
+            _logger.LogInformation("Password reset successfully for {Identifier}", identifier);
 
-            return Result.Success();
+            return Result.Success(UserMessages.PasswordResetSuccessfully);
         }
     }
 }

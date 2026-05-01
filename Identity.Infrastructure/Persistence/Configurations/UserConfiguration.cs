@@ -4,9 +4,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Identity.Infrastructure.Persistence.Configurations;
 
-/// <summary>
-/// EF Core configuration for User entity
-/// </summary>
 internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
@@ -15,6 +12,14 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasKey(u => u.Id);
 
+        builder.Property(u => u.Username)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.HasIndex(u => u.Username)
+            .IsUnique()
+            .HasDatabaseName("IX_Users_Username");
+
         builder.Property(u => u.Email)
             .IsRequired()
             .HasMaxLength(100);
@@ -22,17 +27,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.Email)
             .IsUnique();
 
-        builder.Property(u => u.FirstName)
-            .IsRequired()
-            .HasMaxLength(50);
-
-        builder.Property(u => u.LastName)
-            .IsRequired()
-            .HasMaxLength(50);
-
         builder.Property(u => u.PasswordHash)
             .IsRequired()
             .HasMaxLength(500);
+
+        builder.Property(u => u.PhoneNumber)
+            .HasMaxLength(50);
 
         builder.Property(u => u.EmailConfirmed)
             .IsRequired();
@@ -54,22 +54,14 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.ModifiedOn);
 
-        builder.Property(t => t.CreatedByEmail)
+        builder.Property(u => u.CreatedByEmail)
             .IsRequired();
 
-        builder.Property(t => t.CreatedByName)
+        builder.Property(u => u.CreatedByName)
             .IsRequired();
 
         builder.Property(u => u.TenantId)
             .IsRequired();
 
-        // Configure roles as JSON (or separate table if preferred)
-        builder.Property(u => u.Roles)
-            .HasConversion(
-                v => string.Join(',', v),
-                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
-            .HasMaxLength(500);
-
-        builder.Ignore(u => u.FullName);
     }
 }

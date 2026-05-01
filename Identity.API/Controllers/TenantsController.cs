@@ -1,6 +1,8 @@
+using Identity.API.Filters;
 using Identity.Application.Commands.Tenants;
 using Identity.Application.Models.Tenant;
 using Identity.Application.Queries.Tenants;
+using Identity.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +10,6 @@ using Shared.Domain.Pagination;
 
 namespace Identity.API.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     public class TenantsController : BaseApiController
     {
@@ -19,6 +20,7 @@ namespace Identity.API.Controllers
             _sender = sender;
         }
 
+        [Authorize]
         [HttpGet]
         [ProducesResponseType(typeof(PagedResult<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllTenants([FromQuery] PagedRequest request, CancellationToken cancellationToken = default)
@@ -31,6 +33,7 @@ namespace Identity.API.Controllers
             return Ok(result.Value);
         }
 
+        [Authorize]
         [HttpGet("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -44,6 +47,7 @@ namespace Identity.API.Controllers
             return Ok(result.Value);
         }
 
+        [Authorize]
         [HttpGet("subdomain/{subdomain}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -57,14 +61,13 @@ namespace Identity.API.Controllers
             return Ok(result.Value);
         }
 
+        [RequireRestKey]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> CreateTenant([FromBody] TenantModel model, CancellationToken cancellationToken)
         {
-            model.CreatedByEmail = GetUserEmailFromClaims();
-            model.CreatedByName = GetUserNameFromClaims();
-
             var result = await _sender.Send(new CreateTenantCommand(model), cancellationToken);
 
             if (result.IsFailure)
@@ -73,9 +76,12 @@ namespace Identity.API.Controllers
             return CreatedAtAction(nameof(GetTenantById), new { id = result.Value.Id }, result.Value);
         }
 
+        [RequireRestKey]
         [HttpPut]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTenant([FromBody] TenantModel model, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(new UpdateTenantCommand(model), cancellationToken);
@@ -84,6 +90,27 @@ namespace Identity.API.Controllers
                 return BadRequest(new { error = result.Error.Description });
 
             return Ok(result.Value);
+        }
+
+        [RequireRestKey]
+        [HttpDelete("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteTenant(Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _sender.Send(new DeleteTenantCommand(id), cancellationToken);
+
+            if (result.IsFailure)
+            {
+                if (result.Error == TenantErrors.NotFound)
+                    return NotFound(new { error = result.Error.Description });
+
+                return BadRequest(new { error = result.Error.Description });
+            }
+
+            return NoContent();
         }
     }
 }

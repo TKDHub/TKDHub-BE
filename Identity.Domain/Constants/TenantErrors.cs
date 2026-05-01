@@ -25,6 +25,10 @@ public static class TenantErrors
         "Subdomain is required");
 
     public static readonly Error EmailRequired = new(
-        "Tenant.EmailRequired", 
+        "Tenant.EmailRequired",
         "Contact email is required");
+
+    public static readonly Error HasActiveUsers = new(
+        "Tenant.HasActiveUsers",
+        "Cannot delete a tenant that still has active users");
 }

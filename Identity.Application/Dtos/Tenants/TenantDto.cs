@@ -1,4 +1,5 @@
-﻿using Shared.Domain.Enums;
+using Identity.Application.Dtos.Branches;
+using Shared.Domain.Enums;
 
 namespace Identity.Application.Dtos.Tenants
 {
@@ -12,5 +13,6 @@ namespace Identity.Application.Dtos.Tenants
         public string SubscriptionPlan { get; init; } = string.Empty;
         public int MaxUsers { get; init; }
         public DateTimeOffset CreatedOn { get; init; }
+        public List<BranchDto> Branches { get; init; } = new();
     }
 }

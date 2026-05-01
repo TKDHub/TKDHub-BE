@@ -24,12 +24,8 @@ namespace Identity.Application.Validators.Users
                 .NotEmpty().WithMessage("Confirm password is required")
                 .Equal(x => x.Password).WithMessage("Passwords do not match");
 
-            RuleFor(x => x.FirstName)
-                .NotEmpty().WithMessage("First name is required")
-                .MaximumLength(50);
-
-            RuleFor(x => x.LastName)
-                .NotEmpty().WithMessage("Last name is required")
+            RuleFor(x => x.Username)
+                .NotEmpty().WithMessage("Username is required")
                 .MaximumLength(50);
         }
     }

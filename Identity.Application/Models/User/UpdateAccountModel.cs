@@ -7,7 +7,7 @@ namespace Identity.Application.Models.User
         public Guid UserId { get; set; }
         public string? Email { get; init; }
         public bool? Active { get; init; }
-        public AccountActorType? Actor { get; init; }
+        public List<UserRoleEnum> Roles { get; init; } = new();
         public string? PhoneNumber { get; init; }
 
         // Set by controller from JWT claims

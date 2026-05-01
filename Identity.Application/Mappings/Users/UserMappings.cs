@@ -1,4 +1,6 @@
+using Identity.Application.Dtos.Tenants;
 using Identity.Application.Dtos.Users;
+using Identity.Application.Mappings.Branches;
 using Identity.Application.Models.User;
 using Identity.Domain.Constants;
 using Identity.Domain.Entities;
@@ -13,9 +15,9 @@ namespace Identity.Application.Mappings.Users
             return new User
             {
                 TenantId = model.TenantId,
-                Email = model.Email.ToLowerInvariant(),
-                FirstName = model.FirstName,
-                LastName = model.LastName,
+                Username = model.Username.Trim(),
+                Email = model.Email.Trim().ToLowerInvariant(),
+                PhoneNumber = model.PhoneNumber?.Trim(),
                 PasswordHash = model.PasswordHash,
                 EmailConfirmed = true,
                 FailedLoginAttempts = 0,
@@ -28,60 +30,62 @@ namespace Identity.Application.Mappings.Users
             return new UserModel
             {
                 Id = user.Id,
+                TenantId = user.TenantId,
+                Username = user.Username,
                 Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber,
+                Roles = user.UserRoles.Select(r => r.RoleId.ToString()).ToList(),
                 Status = (EntityStatusEnum)user.StatusId,
                 EmailConfirmed = user.EmailConfirmed,
-                LastLoginDate = user.LastLoginDate,
-                CreatedOn = user.CreatedOn.UtcDateTime,
-                ModifiedOn = user.ModifiedOn?.UtcDateTime,
-                TenantId = user.TenantId
+                FailedLoginAttempts = user.FailedLoginAttempts,
+                LastLoginDate = user.LastLoginDate.HasValue ? new DateTimeOffset(user.LastLoginDate.Value, TimeSpan.Zero) : null,
+                LockoutEnd = user.LockoutEnd.HasValue ? new DateTimeOffset(user.LockoutEnd.Value, TimeSpan.Zero) : null,
+                CreatedOn = user.CreatedOn,
+                CreatedByEmail = user.CreatedByEmail,
+                CreatedByName = user.CreatedByName,
+                ModifiedOn = user.ModifiedOn,
+                ModifiedByEmail = user.ModifiedByEmail,
+                ModifiedByName = user.ModifiedByName
             };
         }
 
-        /// <summary>
-        /// Convert User entity to UserProfileDto
-        /// </summary>
         public static UserProfileDto ToProfileDto(this User user)
         {
             return new UserProfileDto
             {
                 Id = user.Id,
+                TenantId = user.TenantId,
+                Username = user.Username,
                 Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber,
+                Roles = user.UserRoles.Select(r => r.RoleId.ToString()).ToList(),
                 Status = (EntityStatusEnum)user.StatusId,
                 EmailConfirmed = user.EmailConfirmed,
+                FailedLoginAttempts = user.FailedLoginAttempts,
                 LastLoginDate = user.LastLoginDate.HasValue ? new DateTimeOffset(user.LastLoginDate.Value, TimeSpan.Zero) : null,
+                LockoutEnd = user.LockoutEnd.HasValue ? new DateTimeOffset(user.LockoutEnd.Value, TimeSpan.Zero) : null,
                 CreatedOn = user.CreatedOn,
+                CreatedByEmail = user.CreatedByEmail,
+                CreatedByName = user.CreatedByName,
                 ModifiedOn = user.ModifiedOn,
-                TenantId = user.TenantId
+                ModifiedByEmail = user.ModifiedByEmail,
+                ModifiedByName = user.ModifiedByName,
+                Branches = user.Branches?.ToListDtos() ?? new()
             };
         }
 
-        /// <summary>
-        /// Convert list of users to list of UserModel
-        /// </summary>
         public static List<UserProfileDto> ToListModels(this IEnumerable<User> users)
-        {
-            return users.Select(u => u.ToProfileDto()).ToList();
-        }
+            => users.Select(u => u.ToProfileDto()).ToList();
 
-        // ===== Model → DTO (Input) =====
-
-        /// <summary>
-        /// Convert User to RegisterDto
-        /// </summary>
-        public static RegisterDto ToDto(this User user)
+        public static RegisterDto ToDto(this User user, TenantDto tenantDto)
         {
             return new RegisterDto
             {
+                Username = user.Username,
                 Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
+                Tenant = tenantDto,
+                Branches = user.Branches?.ToListDtos() ?? new(),
                 Message = UserMessages.UserRegisteredSuccessfully,
             };
         }

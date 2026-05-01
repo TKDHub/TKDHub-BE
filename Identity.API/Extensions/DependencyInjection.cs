@@ -2,6 +2,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Identity.API.Settings;
 using Identity.Application.Commands.Authentications;
 using Identity.Application.Contracts;
 using Identity.Application.Services;
@@ -101,6 +102,8 @@ namespace Identity.API.Extensions
             services.AddSharedInfrastructure();
 
             services.AddDomainServices();
+
+            services.Configure<RestKeySettings>(configuration.GetSection(RestKeySettings.SectionName));
 
             // Add CORS
             services.AddCorsPolicy(configuration);

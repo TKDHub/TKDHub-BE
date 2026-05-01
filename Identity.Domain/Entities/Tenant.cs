@@ -19,5 +19,7 @@ namespace Identity.Domain.Entities
         public string? ModifiedByEmail { get; set; }
         public string? ModifiedByName { get; set; }
         public required Int16 StatusId { get; set; } = (short)EntityStatusEnum.Active;
+
+        public ICollection<Branch> Branches { get; set; } = new List<Branch>();
     }
 }

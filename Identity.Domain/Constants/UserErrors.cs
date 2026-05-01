@@ -3,14 +3,19 @@ using Shared.Domain.Primitives;
 
 namespace Identity.Domain.Constants;
 
-/// <summary>
-/// User domain errors
-/// </summary>
 public static class UserErrors
 {
     public static readonly Error NotFound = new(
         "User.NotFound",
         "User with the specified identifier was not found");
+
+    public static readonly Error UsernameRequired = new(
+        "User.UsernameRequired",
+        "Username is required");
+
+    public static readonly Error UsernameAlreadyExists = new(
+        "User.UsernameAlreadyExists",
+        "Username is already taken");
 
     public static readonly Error EmailRequired = new(
         "User.EmailRequired",
@@ -24,21 +29,13 @@ public static class UserErrors
         "User.EmailAlreadyExists",
         "User with the specified email already exists");
 
-    public static readonly Error FirstNameRequired = new(
-        "User.FirstNameRequired",
-        "First name is required");
-
-    public static readonly Error LastNameRequired = new(
-        "User.LastNameRequired",
-        "Last name is required");
-
     public static readonly Error PasswordRequired = new(
         "User.PasswordRequired",
         "Password is required");
 
     public static readonly Error InvalidCredentials = new(
         "User.InvalidCredentials",
-        "Invalid email or password");
+        "Invalid username or password");
 
     public static readonly Error AccountLockedOut = new(
         "User.AccountLockedOut",
@@ -75,7 +72,7 @@ public static class UserErrors
     public static readonly Error RefreshTokenExpired = new(
         "User.RefreshTokenExpired",
         "Refresh token has expired");
-    
+
     public static readonly Error UserNotFound = new(
         "User.NotFound",
         "User not found");
@@ -83,4 +80,12 @@ public static class UserErrors
     public static readonly Error Forbidden = new(
         "User.Forbidden",
         "You do not have permission to perform this action");
+
+    public static readonly Error PasswordMismatch = new(
+        "Password.Mismatch",
+        "New password and confirm password do not match");
+
+    public static readonly Error InvalidToken = new(
+        "User.InvalidToken",
+        "Invalid or missing token");
 }

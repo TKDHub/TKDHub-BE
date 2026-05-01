@@ -15,9 +15,10 @@ namespace Identity.Infrastructure.Persistence
 
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Branch> Branches { get; set; }
         public DbSet<ErrorLog> ErrorLogs { get; set; }
 
-        //public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
