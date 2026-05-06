@@ -1,10 +1,13 @@
 using Identity.Application.Contracts;
+using Identity.Domain.Constants;
+using Identity.Domain.Entities;
 using Identity.Infrastructure.Settings;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using Shared.Domain.Primitives;
 
 namespace Identity.Infrastructure.Services
 {
@@ -19,25 +22,34 @@ namespace Identity.Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken cancellationToken = default)
+        public async Task<Result<string>> SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken cancellationToken = default)
         {
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(_smtp.FromName, _smtp.FromEmail));
-            message.To.Add(new MailboxAddress(toName, toEmail));
-            message.Subject = subject;
-            message.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+            try
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(_smtp.FromName, _smtp.FromEmail));
+                message.To.Add(new MailboxAddress(toName, toEmail));
+                message.Subject = subject;
+                message.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
 
-            using var client = new SmtpClient();
+                using var client = new SmtpClient();
 
-            await client.ConnectAsync(_smtp.Host, _smtp.Port,
-                _smtp.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None,
-                cancellationToken);
+                // Use SecureSocketOptions.Auto instead of manually mapping it
+                await client.ConnectAsync(_smtp.Host, _smtp.Port, SecureSocketOptions.Auto, cancellationToken);
 
-            await client.AuthenticateAsync(_smtp.Username, _smtp.Password, cancellationToken);
-            await client.SendAsync(message, cancellationToken);
-            await client.DisconnectAsync(quit: true, cancellationToken);
+                await client.AuthenticateAsync(_smtp.Username, _smtp.Password, cancellationToken);
+                await client.SendAsync(message, cancellationToken);
+                await client.DisconnectAsync(quit: true, cancellationToken);
 
-            _logger.LogInformation("Email sent to {Email} — subject: {Subject}", toEmail, subject);
+                _logger.LogInformation("Email sent to {Email} — subject: {Subject}", toEmail, subject);
+
+                return Result.Success(UserMessages.EmailSent);
+            }
+            catch (Exception ex)
+            {
+                return Result.Failure<string>(new("User.EmailSentErorr", ex.Message));
+                throw;
+            }
         }
     }
 }

@@ -78,7 +78,7 @@ namespace Identity.Application.Commands.Authentications
             {
                 foreach (var branchId in request.model.BranchIds)
                 {
-                    var branch = await _branchRepository.GetByIdAsync(branchId, cancellationToken);
+                    var branch = await _branchRepository.GetByIdIgnoringFiltersAsync(branchId, cancellationToken);
                     if (branch is not null)
                         user.Branches.Add(branch);
                 }

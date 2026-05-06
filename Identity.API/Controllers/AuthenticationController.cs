@@ -63,7 +63,7 @@ namespace Identity.API.Controllers
                 if (result.Error == UserErrors.AccountLockedOut)
                     return StatusCode(StatusCodes.Status423Locked, new { error = result.Error.Description });
 
-                return Unauthorized(new { error = result.Error.Description });
+                return BadRequest(new { error = result.Error.Description });
             }
 
             return Ok(result.Value);

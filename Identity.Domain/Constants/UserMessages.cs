@@ -7,4 +7,5 @@ public static class UserMessages
     public const string PasswordChangedSuccessfully = "Password changed successfully";
     public const string PasswordResetSuccessfully = "Password has been reset successfully";
     public const string LoggedOutSuccessfully = "Logged out successfully";
+    public const string EmailSent = "Email sent";
 }

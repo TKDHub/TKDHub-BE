@@ -52,7 +52,9 @@ namespace Identity.Application.Commands.Authentications
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            await _otpService.SendOtpAsync(identifier, request.model.Type, otp, cancellationToken);
+            var result = await _otpService.SendOtpAsync(identifier, request.model.Type, otp, cancellationToken);
+            if (result.IsFailure)
+                return Result.Failure<string>(result.Error);
 
             _logger.LogInformation("OTP generated for {Type} {Identifier}", request.model.Type, identifier);
 
