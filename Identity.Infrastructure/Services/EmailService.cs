@@ -34,9 +34,14 @@ namespace Identity.Infrastructure.Services
 
                 using var client = new SmtpClient();
 
-                // Use SecureSocketOptions.Auto instead of manually mapping it
-                await client.ConnectAsync(_smtp.Host, _smtp.Port, SecureSocketOptions.Auto, cancellationToken);
+                // Use SslOnConnect for Port 465
+                await client.ConnectAsync(
+                    _smtp.Host,
+                    _smtp.Port,
+                    SecureSocketOptions.SslOnConnect,
+                    cancellationToken);
 
+                // Note: Authenticate MUST come after ConnectAsync
                 await client.AuthenticateAsync(_smtp.Username, _smtp.Password, cancellationToken);
                 await client.SendAsync(message, cancellationToken);
                 await client.DisconnectAsync(quit: true, cancellationToken);
