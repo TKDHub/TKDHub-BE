@@ -20,14 +20,11 @@ namespace Identity.Infrastructure.Services
 
         public string GenerateOtp()
         {
-            // TODO: switch back to random generation before production
-            return OtpPolicy.StaticOtp;
-
-            // var bytes = new byte[4];
-            // using var rng = RandomNumberGenerator.Create();
-            // rng.GetBytes(bytes);
-            // var number = Math.Abs(BitConverter.ToInt32(bytes, 0)) % (int)Math.Pow(10, OtpPolicy.Length);
-            // return number.ToString($"D{OtpPolicy.Length}");
+            var bytes = new byte[4];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(bytes);
+            var number = Math.Abs(BitConverter.ToInt32(bytes, 0)) % (int)Math.Pow(10, OtpPolicy.Length);
+            return number.ToString($"D{OtpPolicy.Length}");
         }
 
         public Task<Result<string>> SendOtpAsync(string identifier, IdentifierType type, string otp, CancellationToken cancellationToken = default)

@@ -15,4 +15,5 @@ public class BranchDto
     public string? AddressStreet { get; init; }
 
     public DateTimeOffset? TimeZone { get; init; }
+    public string? Currency { get; init; }
 }

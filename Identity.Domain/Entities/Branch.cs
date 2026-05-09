@@ -1,3 +1,4 @@
+using Identity.Domain.Enums;
 using Shared.Domain.Primitives;
 
 namespace Identity.Domain.Entities;
@@ -15,6 +16,7 @@ public sealed class Branch : AuditableEntity<Guid>
     public string? AddressStreet { get; set; }
 
     public DateTimeOffset? TimeZone { get; set; }
+    public CurrencyEnum? Currency { get; set; }
 
     public Tenant? Tenant { get; set; }
     public ICollection<User> Users { get; set; } = new List<User>();

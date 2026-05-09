@@ -44,6 +44,10 @@ internal sealed class BranchConfiguration : IEntityTypeConfiguration<Branch>
 
         builder.Property(b => b.TimeZone);
 
+        builder.Property(b => b.Currency)
+            .HasColumnName("Currency")
+            .HasConversion<short?>();
+
         builder.Property(b => b.StatusId)
             .IsRequired();
 

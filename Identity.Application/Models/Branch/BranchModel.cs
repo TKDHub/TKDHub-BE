@@ -15,6 +15,7 @@ public sealed record BranchModel
     public string? AddressStreet { get; init; }
 
     public DateTimeOffset? TimeZone { get; init; }
+    public string? Currency { get; init; }
 
     public string CreatedByEmail { get; set; } = string.Empty;
     public string CreatedByName { get; set; } = string.Empty;

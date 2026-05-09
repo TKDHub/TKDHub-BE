@@ -47,18 +47,7 @@ internal sealed class UpdateBranchCommandHandler : ICommandHandler<UpdateBranchC
             }
         }
 
-        branch.Name = newName;
-        branch.Email = request.Model.Email.Trim().ToLowerInvariant();
-        branch.PhoneNumber = request.Model.PhoneNumber?.Trim();
-        branch.Enabled = request.Model.Enabled;
-        branch.AddressCountry = request.Model.AddressCountry?.Trim();
-        branch.AddressState = request.Model.AddressState?.Trim();
-        branch.AddressCity = request.Model.AddressCity?.Trim();
-        branch.AddressStreet = request.Model.AddressStreet?.Trim();
-        branch.TimeZone = request.Model.TimeZone;
-        branch.ModifiedOn = DateTimeOffset.UtcNow;
-        branch.ModifiedByEmail = request.Model.ModifiedByEmail;
-        branch.ModifiedByName = request.Model.ModifiedByName;
+        branch.ApplyUpdate(request.Model);
 
         _branchRepository.Update(branch);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

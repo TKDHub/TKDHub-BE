@@ -54,6 +54,10 @@ namespace Shared.Infrastructure.Middleware
 
         private async Task LogErrorToDatabase(HttpContext context,Exception exception,IErrorLogRepository errorLogRepository)
         {
+            // Skip logging for health check endpoint
+            if (context.Request.Path.StartsWithSegments("/health"))
+                return;
+
             try
             {
                 var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
