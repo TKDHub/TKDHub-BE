@@ -34,11 +34,15 @@ namespace Identity.Infrastructure.Services
 
                 using var client = new SmtpClient();
 
-                // Use SslOnConnect for Port 465
+                // Port 587 uses STARTTLS; Port 465 uses SslOnConnect
+                var socketOptions = _smtp.Port == 465
+                    ? SecureSocketOptions.SslOnConnect
+                    : SecureSocketOptions.StartTls;
+
                 await client.ConnectAsync(
                     _smtp.Host,
                     _smtp.Port,
-                    SecureSocketOptions.SslOnConnect,
+                    socketOptions,
                     cancellationToken);
 
                 // Note: Authenticate MUST come after ConnectAsync
