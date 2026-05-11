@@ -18,7 +18,8 @@ jobs:
       - name: Login to DigitalOcean Registry
         run: echo "${{ secrets.DO_TOKEN }}" | docker login registry.digitalocean.com -u "${{ secrets.DO_TOKEN }}" --password-stdin
 
-      - name: Build Docker image
+      # ── Identity ──────────────────────────────────────────────────────────
+      - name: Build Identity image
         run: |
           docker build \
             -f Identity.API/Dockerfile \
@@ -26,10 +27,24 @@ jobs:
             -t registry.digitalocean.com/tkdhub-registry/identity-api:latest \
             .
 
-      - name: Push Docker image
+      - name: Push Identity image
         run: |
           docker push registry.digitalocean.com/tkdhub-registry/identity-api:${{ github.run_number }}
           docker push registry.digitalocean.com/tkdhub-registry/identity-api:latest
+
+      # ── Dojo ──────────────────────────────────────────────────────────────
+      - name: Build Dojo image
+        run: |
+          docker build \
+            -f Dojo.API/Dockerfile \
+            -t registry.digitalocean.com/tkdhub-registry/dojo-api:${{ github.run_number }} \
+            -t registry.digitalocean.com/tkdhub-registry/dojo-api:latest \
+            .
+
+      - name: Push Dojo image
+        run: |
+          docker push registry.digitalocean.com/tkdhub-registry/dojo-api:${{ github.run_number }}
+          docker push registry.digitalocean.com/tkdhub-registry/dojo-api:latest
 
   deploy:
     name: Deploy to App Platform
@@ -43,5 +58,8 @@ jobs:
         with:
           token: ${{ secrets.DO_TOKEN }}
 
-      - name: Trigger deployment with new image
+      - name: Deploy Identity
         run: doctl apps create-deployment 302e2fec-8420-44cd-aab0-e6e9b98caf01 --force-rebuild
+
+      - name: Deploy Dojo
+        run: doctl apps create-deployment ${{ secrets.DOJO_APP_ID }} --force-rebuild
