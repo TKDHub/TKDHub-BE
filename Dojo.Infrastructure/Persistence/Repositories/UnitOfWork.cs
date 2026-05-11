@@ -1,2 +1,2 @@
 // Moved to Shared.Infrastructure.Persistence.Repositories.UnitOfWork<TDbContext>
-namespace Identity.Infrastructure.Persistence.Repositories;
+namespace Dojo.Infrastructure.Persistence.Repositories;

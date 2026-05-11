@@ -15,8 +15,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Identity.Application\Identity.Application.csproj" />
-		<ProjectReference Include="..\Identity.Infrastructure\Identity.Infrastructure.csproj" />
+		<ProjectReference Include="..\Dojo.Application\Dojo.Application.csproj" />
+		<ProjectReference Include="..\Dojo.Infrastructure\Dojo.Infrastructure.csproj" />
 		<ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
 	</ItemGroup>
 

@@ -1,2 +1,2 @@
 // Moved to Shared.Domain.Repositories.IUnitOfWork
-namespace Identity.Domain.Repositories;
+namespace Dojo.Domain.Repositories;

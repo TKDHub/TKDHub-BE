@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Domain.Repositories;
 using Shared.Infrastructure.Authentication;
+using Shared.Infrastructure.Persistence.Repositories;
 using Shared.Infrastructure.Repositories;
 
 namespace Identity.Infrastructure
@@ -25,7 +26,7 @@ namespace Identity.Infrastructure
             services.AddScoped<ITenantRepository, TenantRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IBranchRepository, BranchRepository>();
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IUnitOfWork, UnitOfWork<IdentityDbContext>>();
             services.AddScoped<IErrorLogRepository>(provider =>
             {
                 var dbContext = provider.GetRequiredService<IdentityDbContext>();
