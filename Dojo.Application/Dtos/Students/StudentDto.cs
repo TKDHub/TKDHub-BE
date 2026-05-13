@@ -2,19 +2,39 @@ namespace Dojo.Application.Dtos.Students;
 
 public sealed class StudentDto
 {
-    public Guid   Id             { get; init; }
-    public Guid   TenantId       { get; init; }
-    public Guid   BranchId       { get; init; }
+    public Guid    Id       { get; init; }
+    public Guid    TenantId { get; init; }
+    public Guid    BranchId { get; init; }
 
-    public string FirstName      { get; init; } = string.Empty;
-    public string LastName       { get; init; } = string.Empty;
-    public string FullName       { get; init; } = string.Empty;
-    public string Email          { get; init; } = string.Empty;
-    public string? PhoneNumber   { get; init; }
+    // ── Identity ────────────────────────────────────────────────
+    public string  FirstName   { get; init; } = string.Empty;
+    public string  LastName    { get; init; } = string.Empty;
+    public string  FullName    { get; init; } = string.Empty;
+    public string? Email       { get; init; }
+    public string  PhoneNumber { get; init; } = string.Empty;
 
-    public DateOnly DateOfBirth    { get; init; }
-    public string   Gender         { get; init; } = string.Empty;
-    public string   BeltLevel      { get; init; } = string.Empty;
-    public DateOnly EnrollmentDate { get; init; }
-    public bool     Enabled        { get; init; }
+    // ── Demographics ─────────────────────────────────────────────
+    public DateOnly DateOfBirth { get; init; }
+    public string   Gender      { get; init; } = string.Empty;
+
+    // ── Membership ───────────────────────────────────────────────
+    public DateOnly StartDate          { get; init; }
+    public string   BeltLevel          { get; init; } = string.Empty;
+    public Guid     SubscriptionPlanId { get; init; }
+
+    // ── Snapshot (frozen at registration) ────────────────────────
+    public decimal  Price          { get; init; }
+    public string   Currency       { get; init; } = string.Empty;
+    public int      DurationMonths { get; init; }
+
+    // ── Computed ─────────────────────────────────────────────────
+    /// <summary>Derived: StartDate + DurationMonths. Never stored in the database.</summary>
+    public DateOnly EndDate => StartDate.AddMonths(DurationMonths);
+
+    // ── Optional ─────────────────────────────────────────────────
+    public string? ProfileImageUrl  { get; init; }
+    public string? EmergencyContact { get; init; }
+
+    // ── Status ───────────────────────────────────────────────────
+    public string Status { get; init; } = string.Empty;
 }

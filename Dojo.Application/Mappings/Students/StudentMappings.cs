@@ -14,55 +14,69 @@ public static class StudentMappings
     public static StudentDto ToDto(this Student student)
         => new()
         {
-            Id             = student.Id,
-            TenantId       = student.TenantId,
-            BranchId       = student.BranchId,
-            FirstName      = student.FirstName,
-            LastName       = student.LastName,
-            FullName       = student.FullName,
-            Email          = student.Email,
-            PhoneNumber    = student.PhoneNumber,
-            DateOfBirth    = student.DateOfBirth,
-            Gender         = student.Gender.ToString(),
-            BeltLevel      = student.BeltLevel.ToString(),
-            EnrollmentDate = student.EnrollmentDate,
-            Enabled        = student.Enabled
+            Id                 = student.Id,
+            TenantId           = student.TenantId,
+            BranchId           = student.BranchId,
+            FirstName          = student.FirstName,
+            LastName           = student.LastName,
+            FullName           = student.FullName,
+            Email              = student.Email,
+            PhoneNumber        = student.PhoneNumber,
+            DateOfBirth        = student.DateOfBirth,
+            Gender             = student.Gender.ToString(),
+            StartDate          = student.StartDate,
+            BeltLevel          = student.BeltLevel.ToString(),
+            SubscriptionPlanId = student.SubscriptionPlanId,
+            Price              = student.Price,
+            Currency           = student.Currency,
+            DurationMonths     = student.DurationMonths,
+            ProfileImageUrl    = student.ProfileImageUrl,
+            EmergencyContact   = student.EmergencyContact,
+            Status             = ((StudentStatusEnum)student.StatusId).ToString()
         };
 
-    public static Student ToEntity(this StudentModel model)
+    public static Student ToEntity(this StudentModel model, Guid branchId, Guid tenantId)
         => new()
         {
-            BranchId       = model.BranchId,
-            FirstName      = model.FirstName.Trim(),
-            LastName       = model.LastName.Trim(),
-            Email          = model.Email.Trim().ToLowerInvariant(),
-            PhoneNumber    = model.PhoneNumber?.Trim(),
-            DateOfBirth    = model.DateOfBirth,
-            Gender         = Enum.TryParse<GenderEnum>(model.Gender, ignoreCase: true, out var gender) ? gender : GenderEnum.Other,
-            BeltLevel      = Enum.TryParse<BeltLevelEnum>(model.BeltLevel, ignoreCase: true, out var belt) ? belt : BeltLevelEnum.White,
-            EnrollmentDate = model.EnrollmentDate,
-            Enabled        = model.Enabled,
-            StatusId       = (short)EntityStatusEnum.Active,
-            CreatedOn      = DateTimeOffset.UtcNow,
-            CreatedByEmail = model.CreatedByEmail,
-            CreatedByName  = model.CreatedByName
+            BranchId           = branchId,
+            TenantId           = tenantId,
+            FirstName          = model.FirstName.Trim(),
+            LastName           = model.LastName.Trim(),
+            Email              = model.Email?.Trim().ToLowerInvariant(),
+            PhoneNumber        = model.PhoneNumber.Trim(),
+            DateOfBirth        = model.DateOfBirth,
+            Gender             = Enum.TryParse<GenderEnum>(model.Gender, ignoreCase: true, out var gender) ? gender : GenderEnum.Other,
+            StartDate          = model.StartDate,
+            BeltLevel          = Enum.TryParse<BeltLevelEnum>(model.BeltLevel, ignoreCase: true, out var belt) ? belt : BeltLevelEnum.White,
+            SubscriptionPlanId = model.SubscriptionPlanId,
+            Price              = model.Price,
+            Currency           = model.Currency,
+            DurationMonths     = model.DurationMonths,
+            ProfileImageUrl    = model.ProfileImageUrl?.Trim(),
+            EmergencyContact   = model.EmergencyContact?.Trim(),
+            StatusId           = (short)StudentStatusEnum.Active,
+            CreatedOn          = DateTimeOffset.UtcNow,
+            CreatedByEmail     = model.CreatedByEmail,
+            CreatedByName      = model.CreatedByName
         };
 
     public static Student ApplyUpdate(this Student student, StudentModel model)
     {
-        student.BranchId       = model.BranchId;
-        student.FirstName      = model.FirstName.Trim();
-        student.LastName       = model.LastName.Trim();
-        student.Email          = model.Email.Trim().ToLowerInvariant();
-        student.PhoneNumber    = model.PhoneNumber?.Trim();
-        student.DateOfBirth    = model.DateOfBirth;
-        student.Gender         = Enum.TryParse<GenderEnum>(model.Gender, ignoreCase: true, out var gender) ? gender : student.Gender;
-        student.BeltLevel      = Enum.TryParse<BeltLevelEnum>(model.BeltLevel, ignoreCase: true, out var belt) ? belt : student.BeltLevel;
-        student.EnrollmentDate = model.EnrollmentDate;
-        student.Enabled        = model.Enabled;
-        student.ModifiedOn     = DateTimeOffset.UtcNow;
-        student.ModifiedByEmail = model.ModifiedByEmail;
-        student.ModifiedByName  = model.ModifiedByName;
+        student.FirstName          = model.FirstName.Trim();
+        student.LastName           = model.LastName.Trim();
+        student.Email              = model.Email?.Trim().ToLowerInvariant();
+        student.PhoneNumber        = model.PhoneNumber.Trim();
+        student.DateOfBirth        = model.DateOfBirth;
+        student.Gender             = Enum.TryParse<GenderEnum>(model.Gender, ignoreCase: true, out var gender) ? gender : student.Gender;
+        student.StartDate          = model.StartDate;
+        student.BeltLevel          = Enum.TryParse<BeltLevelEnum>(model.BeltLevel, ignoreCase: true, out var belt) ? belt : student.BeltLevel;
+        student.SubscriptionPlanId = model.SubscriptionPlanId;
+        student.ProfileImageUrl    = model.ProfileImageUrl?.Trim();
+        student.EmergencyContact   = model.EmergencyContact?.Trim();
+        student.ModifiedOn         = DateTimeOffset.UtcNow;
+        student.ModifiedByEmail    = model.ModifiedByEmail;
+        student.ModifiedByName     = model.ModifiedByName;
+        // Price and Currency are intentionally NOT updated here — they are frozen at registration
         return student;
     }
 }

@@ -6,10 +6,9 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Shared.Application.Contracts;
 using Shared.Application.Models;
-using Shared.Domain.Entities;
 using Shared.Domain.Exceptions;
-using Shared.Domain.Repositories;
 
 namespace Shared.Infrastructure.Middleware
 {
@@ -32,7 +31,7 @@ namespace Shared.Infrastructure.Middleware
             _environment = environment;
         }
 
-        public async Task InvokeAsync(HttpContext context,IErrorLogRepository errorLogRepository)
+        public async Task InvokeAsync(HttpContext context, IErrorLogService errorLogService)
         {
             try
             {
@@ -45,96 +44,78 @@ namespace Shared.Infrastructure.Middleware
                     "An unhandled exception occurred: {Message}",
                     exception.Message);
 
-                // Save error to database
-                await LogErrorToDatabase(context, exception, errorLogRepository);
+                await ForwardErrorLog(context, exception, errorLogService);
 
                 await HandleExceptionAsync(context, exception);
             }
         }
 
-        private async Task LogErrorToDatabase(HttpContext context,Exception exception,IErrorLogRepository errorLogRepository)
+        private async Task ForwardErrorLog(HttpContext context, Exception exception, IErrorLogService errorLogService)
         {
-            // Skip logging for health check endpoint
-            if (context.Request.Path.StartsWithSegments("/health"))
+            // Skip health checks and the error-log ingest endpoint itself (prevents Identity self-recursion)
+            if (context.Request.Path.StartsWithSegments("/health") ||
+                context.Request.Path.StartsWithSegments("/api/errorlogs"))
                 return;
 
             try
             {
                 var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
 
-                // Extract user info
-                var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userId   = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var tenantId = context.User?.FindFirst("TenantId")?.Value;
 
-                // Determine severity
                 var severity = exception switch
                 {
-                    ValidationException => "Warning",
-                    NotFoundException => "Information",
+                    ValidationException   => "Warning",
+                    NotFoundException     => "Information",
                     BusinessRuleException => "Warning",
                     UnauthorizedException => "Warning",
-                    ForbiddenException => "Warning",
-                    _ => "Error"
+                    ForbiddenException    => "Warning",
+                    _                     => "Error"
                 };
 
-                // Read request body (if available)
                 string? requestBody = null;
-                if (context.Request.ContentLength > 0 &&
-                    context.Request.Body.CanSeek)
+                if (context.Request.ContentLength > 0 && context.Request.Body.CanSeek)
                 {
                     context.Request.Body.Position = 0;
-                    using var reader = new StreamReader(
-                        context.Request.Body,
-                        Encoding.UTF8,
-                        leaveOpen: true);
+                    using var reader = new StreamReader(context.Request.Body, Encoding.UTF8, leaveOpen: true);
                     requestBody = await reader.ReadToEndAsync();
                     context.Request.Body.Position = 0;
                 }
 
-                // Create error log
-                var errorLog = ErrorLog.Create(
-                    message: exception.Message,
-                    stackTrace: exception.StackTrace,
-                    innerException: exception.InnerException?.ToString(),
-                    exceptionType: exception.GetType().Name,
-                    requestPath: context.Request.Path,
-                    requestMethod: context.Request.Method,
-                    userId: userId,
-                    tenantId: tenantId,
-                    severity: severity);
-
-                // Set HTTP details
-                errorLog.SetHttpDetails(
-                    statusCode: GetStatusCode(exception),
-                    queryString: context.Request.QueryString.ToString(),
-                    requestBody: requestBody?.Length > 8000
-                        ? requestBody.Substring(0, 8000)
-                        : requestBody,
-                    userAgent: context.Request.Headers["User-Agent"].ToString(),
-                    ipAddress: context.Connection.RemoteIpAddress?.ToString(),
-                    traceId: traceId);
-
-                // Add additional data for validation errors
+                string? additionalData = null;
                 if (exception is ValidationException validationEx)
+                    additionalData = JsonSerializer.Serialize(validationEx.Errors);
+
+                var payload = new ErrorLogPayload
                 {
-                    var additionalData = JsonSerializer.Serialize(validationEx.Errors);
-                    errorLog.SetAdditionalData(additionalData);
-                }
+                    Id             = Guid.NewGuid(),
+                    Message        = exception.Message,
+                    StackTrace     = exception.StackTrace,
+                    InnerException = exception.InnerException?.ToString(),
+                    ExceptionType  = exception.GetType().Name,
+                    StatusCode     = GetStatusCode(exception),
+                    RequestPath    = context.Request.Path,
+                    RequestMethod  = context.Request.Method,
+                    QueryString    = context.Request.QueryString.ToString(),
+                    RequestBody    = requestBody?.Length > 8000 ? requestBody[..8000] : requestBody,
+                    UserAgent      = context.Request.Headers["User-Agent"].ToString(),
+                    IpAddress      = context.Connection.RemoteIpAddress?.ToString(),
+                    UserId         = userId,
+                    TenantId       = tenantId,
+                    TraceId        = traceId,
+                    Severity       = severity,
+                    Timestamp      = DateTimeOffset.UtcNow,
+                    AdditionalData = additionalData
+                };
 
-                // Save to database
-                errorLogRepository.Add(errorLog);
-                await errorLogRepository.SaveChangesAsync();
+                await errorLogService.LogAsync(payload);
 
-                _logger.LogInformation(
-                    "Error logged to database with ID: {ErrorLogId}",
-                    errorLog.Id);
+                _logger.LogInformation("Error forwarded to Identity log service with ID: {ErrorLogId}", payload.Id);
             }
             catch (Exception ex)
             {
-                // Don't throw if logging fails
-                _logger.LogError(
-                    ex,
-                    "Failed to log error to database");
+                _logger.LogError(ex, "Failed to forward error log to Identity");
             }
         }
 

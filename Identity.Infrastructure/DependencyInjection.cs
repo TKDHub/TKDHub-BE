@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Domain.Repositories;
 using Shared.Infrastructure.Authentication;
+using Shared.Infrastructure.Extensions;
 using Shared.Infrastructure.Persistence.Repositories;
 using Shared.Infrastructure.Repositories;
 
@@ -32,7 +33,10 @@ namespace Identity.Infrastructure
                 var dbContext = provider.GetRequiredService<IdentityDbContext>();
                 return new ErrorLogRepository(dbContext);
             });
-            
+
+            // Centralised error logging — Identity self-posts to its own /api/errorlogs
+            services.AddHttpErrorLogService(configuration);
+
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IOtpService, OtpService>();
 

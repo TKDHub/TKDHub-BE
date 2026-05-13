@@ -9,50 +9,71 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
     public void Configure(EntityTypeBuilder<Student> builder)
     {
         builder.ToTable("Students");
-
         builder.HasKey(s => s.Id);
 
-        builder.Property(s => s.BranchId)
-            .IsRequired();
+        builder.Property(s => s.BranchId).IsRequired();
 
+        // ── Identity ────────────────────────────────────────────────
         builder.Property(s => s.FirstName)
-            .IsRequired()
-            .HasMaxLength(100);
-
-        builder.Property(s => s.LastName)
-            .IsRequired()
-            .HasMaxLength(100);
-
-        builder.Property(s => s.Email)
             .IsRequired()
             .HasMaxLength(150);
 
+        builder.Property(s => s.LastName)
+            .IsRequired()
+            .HasMaxLength(150);
+
+        builder.Property(s => s.Email)
+            .HasMaxLength(150);   // nullable — no IsRequired()
+
         builder.HasIndex(s => new { s.TenantId, s.Email })
             .IsUnique()
-            .HasDatabaseName("IX_Students_TenantId_Email");
+            .HasDatabaseName("IX_Students_TenantId_Email")
+            .HasFilter("\"Email\" IS NOT NULL");   // allow multiple NULLs
 
         builder.Property(s => s.PhoneNumber)
+            .IsRequired()
             .HasMaxLength(50);
 
-        builder.Property(s => s.DateOfBirth)
-            .IsRequired();
+        // ── Demographics ─────────────────────────────────────────────
+        builder.Property(s => s.DateOfBirth).IsRequired();
 
         builder.Property(s => s.Gender)
             .IsRequired()
             .HasConversion<short>();
 
+        // ── Membership ───────────────────────────────────────────────
+        builder.Property(s => s.StartDate).IsRequired();
+
         builder.Property(s => s.BeltLevel)
             .IsRequired()
             .HasConversion<short>();
 
-        builder.Property(s => s.EnrollmentDate)
-            .IsRequired();
+        builder.Property(s => s.SubscriptionPlanId).IsRequired();
 
-        builder.Property(s => s.Enabled)
-            .IsRequired();
+        builder.HasOne(s => s.SubscriptionPlan)
+            .WithMany()
+            .HasForeignKey(s => s.SubscriptionPlanId)
+            .OnDelete(DeleteBehavior.Restrict);   // archiving a plan must not cascade-delete students
 
+        // ── Snapshot ─────────────────────────────────────────────────
+        builder.Property(s => s.Price)
+            .IsRequired()
+            .HasColumnType("decimal(18,2)");
+
+        builder.Property(s => s.Currency)
+            .IsRequired()
+            .HasMaxLength(10);
+
+        builder.Property(s => s.DurationMonths).IsRequired();
+
+        // ── Optional ─────────────────────────────────────────────────
+        builder.Property(s => s.ProfileImageUrl).HasMaxLength(500);
+        builder.Property(s => s.EmergencyContact).HasMaxLength(200);
+
+        // ── Computed ─────────────────────────────────────────────────
         builder.Ignore(s => s.FullName);
 
+        // ── Audit ────────────────────────────────────────────────────
         builder.Property(s => s.StatusId).IsRequired();
         builder.Property(s => s.CreatedOn).IsRequired();
         builder.Property(s => s.CreatedByEmail).IsRequired();

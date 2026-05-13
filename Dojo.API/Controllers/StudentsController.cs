@@ -1,4 +1,3 @@
-using Dojo.API.Filters;
 using Dojo.Application.Commands.Students;
 using Dojo.Application.Dtos.Students;
 using Dojo.Application.Models.Student;
@@ -7,24 +6,31 @@ using Dojo.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Application.Contracts;
 using Shared.Domain.Pagination;
 
 namespace Dojo.API.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 public class StudentsController : BaseApiController
 {
-    private readonly ISender _sender;
+    private readonly ISender        _sender;
+    private readonly IBranchContext _branchContext;
+    private readonly ITenantContext _tenantContext;
 
-    public StudentsController(ISender sender)
+    public StudentsController(ISender sender, IBranchContext branchContext, ITenantContext tenantContext)
     {
-        _sender = sender;
+        _sender        = sender;
+        _branchContext = branchContext;
+        _tenantContext = tenantContext;
     }
 
-    [Authorize]
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<StudentDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllStudents([FromQuery] PagedRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetAllStudents(
+        [FromQuery] PagedRequest request,
+        CancellationToken cancellationToken = default)
     {
         var result = await _sender.Send(new GetAllStudentsQuery(request), cancellationToken);
 
@@ -34,11 +40,10 @@ public class StudentsController : BaseApiController
         return Ok(result.Value);
     }
 
-    [Authorize]
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(StudentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetStudentById(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetStudentById(Guid id, CancellationToken cancellationToken = default)
     {
         var result = await _sender.Send(new GetStudentByIdQuery(id), cancellationToken);
 
@@ -48,18 +53,22 @@ public class StudentsController : BaseApiController
         return Ok(result.Value);
     }
 
-    [RequireRestKey]
     [HttpPost]
     [ProducesResponseType(typeof(StudentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> CreateStudent([FromBody] StudentModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateStudent(
+        [FromBody] StudentModel model,
+        CancellationToken cancellationToken = default)
     {
-        model.CreatedByEmail = GetUserEmailFromClaims();
-        model.CreatedByName  = GetUserNameFromClaims();
+        model = model with
+        {
+            CreatedByEmail = GetUserEmailFromClaims(),
+            CreatedByName  = GetUserNameFromClaims()
+        };
 
-        var result = await _sender.Send(new CreateStudentCommand(model), cancellationToken);
+        var result = await _sender.Send(new CreateStudentCommand(model, _branchContext.BranchId, _tenantContext.TenantId), cancellationToken);
 
         if (result.IsFailure)
             return result.Error == StudentErrors.EmailAlreadyExists
@@ -69,18 +78,23 @@ public class StudentsController : BaseApiController
         return CreatedAtAction(nameof(GetStudentById), new { id = result.Value.Id }, result.Value);
     }
 
-    [RequireRestKey]
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(StudentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> UpdateStudent(Guid id, [FromBody] StudentModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateStudent(
+        Guid id,
+        [FromBody] StudentModel model,
+        CancellationToken cancellationToken = default)
     {
-        model.StudentId      = id;
-        model.ModifiedByEmail = GetUserEmailFromClaims();
-        model.ModifiedByName  = GetUserNameFromClaims();
+        model = model with
+        {
+            StudentId       = id,
+            ModifiedByEmail = GetUserEmailFromClaims(),
+            ModifiedByName  = GetUserNameFromClaims()
+        };
 
         var result = await _sender.Send(new UpdateStudentCommand(model), cancellationToken);
 
@@ -98,7 +112,6 @@ public class StudentsController : BaseApiController
         return Ok(result.Value);
     }
 
-    [RequireRestKey]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

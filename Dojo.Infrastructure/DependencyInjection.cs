@@ -1,12 +1,14 @@
 using Dojo.Domain.Repositories;
 using Dojo.Infrastructure.Persistence;
 using Dojo.Infrastructure.Persistence.Repositories;
+using Dojo.Infrastructure.Services;
+using Dojo.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Shared.Domain.Repositories;
+using Shared.Application.Contracts;
+using Shared.Infrastructure.Extensions;
 using Shared.Infrastructure.Persistence.Repositories;
-using Shared.Infrastructure.Repositories;
 
 namespace Dojo.Infrastructure
 {
@@ -20,12 +22,16 @@ namespace Dojo.Infrastructure
                     b => b.MigrationsAssembly(typeof(DojoDbContext).Assembly.FullName)));
 
             services.AddScoped<IStudentRepository, StudentRepository>();
+            services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork<DojoDbContext>>();
-            services.AddScoped<IErrorLogRepository>(provider =>
-            {
-                var dbContext = provider.GetRequiredService<DojoDbContext>();
-                return new ErrorLogRepository(dbContext);
-            });
+
+            // Identity service clients
+            services.Configure<IdentityApiSettings>(configuration.GetSection(IdentityApiSettings.SectionName));
+            services.AddHttpClient("IdentityApi");
+            services.AddScoped<IBranchService, IdentityBranchService>();
+
+            // Centralised error logging (HTTP → Identity)
+            services.AddHttpErrorLogService(configuration);
 
             return services;
         }

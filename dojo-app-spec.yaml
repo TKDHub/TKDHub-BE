@@ -1,0 +1,48 @@
+name: tkdhub-dojo
+region: nyc
+services:
+- name: dojo-api
+  image:
+    registry: tkdhub-registry
+    registry_type: DOCR
+    repository: dojo-api
+    tag: latest
+  instance_count: 1
+  instance_size_slug: apps-s-1vcpu-1gb
+  http_port: 8080
+  health_check:
+    http_path: /health
+  envs:
+  - key: ASPNETCORE_ENVIRONMENT
+    scope: RUN_AND_BUILD_TIME
+    value: Production
+  - key: ConnectionStrings__DojoDatabase
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: "Host=tkdhub-db-do-user-34610403-0.d.db.ondigitalocean.com;Port=25060;Database=DojoDb;Username=doadmin;Password=AVNS_cPQAAJo88QbYqmhLbrz;SSL Mode=Require;Trust Server Certificate=true"
+  - key: JwtSettings__Issuer
+    scope: RUN_AND_BUILD_TIME
+    value: IdentityAPI-Prod
+  - key: JwtSettings__Audience
+    scope: RUN_AND_BUILD_TIME
+    value: MicroservicesUsers-Prod
+  - key: JwtSettings__ExpiryMinutes
+    scope: RUN_AND_BUILD_TIME
+    value: "60"
+  - key: RestKeySettings__Key
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: "cf1a46ba09439dbebd58a60b27ec0442ec9942313db1d3779efe1387c58f27b3"
+  - key: RestKeySettings__HeaderName
+    scope: RUN_AND_BUILD_TIME
+    value: X-Rest-Key
+  - key: IdentityApiSettings__BaseUrl
+    scope: RUN_AND_BUILD_TIME
+    value: "https://tkdhub-identity-api-url"
+ingress:
+  rules:
+  - component:
+      name: dojo-api
+    match:
+      path:
+        prefix: /

@@ -8,11 +8,14 @@ namespace Shared.Infrastructure
     {
         public static IServiceCollection AddSharedInfrastructure(this IServiceCollection services)
         {
-            // Required for tenant resolution
+            // Required for tenant/branch resolution
             services.AddHttpContextAccessor();
 
             // Register tenant context
             services.AddScoped<ITenantContext, TenantContext>();
+
+            // Register branch context
+            services.AddScoped<IBranchContext, BranchContext>();
 
             return services;
         }

@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +10,18 @@ namespace Shared.Infrastructure.Persistence;
 
 public abstract class BaseDbContext : DbContext
 {
-    private readonly ITenantContext _tenantContext;
+    private readonly ITenantContext   _tenantContext;
+    private readonly IBranchContext?  _branchContext;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    protected BaseDbContext(DbContextOptions options, ITenantContext tenantContext, IHttpContextAccessor httpContextAccessor) : base(options)
+    protected BaseDbContext(
+        DbContextOptions options,
+        ITenantContext tenantContext,
+        IHttpContextAccessor httpContextAccessor,
+        IBranchContext? branchContext = null) : base(options)
     {
-        _tenantContext = tenantContext;
+        _tenantContext       = tenantContext;
+        _branchContext       = branchContext;
         _httpContextAccessor = httpContextAccessor;
     }
 
@@ -23,64 +29,85 @@ public abstract class BaseDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Apply global query filter for tenant isolation
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (typeof(IHasTenant).IsAssignableFrom(entityType.ClrType))
+            var hasTenant = typeof(IHasTenant).IsAssignableFrom(entityType.ClrType);
+            var hasBranch = typeof(IHasBranch).IsAssignableFrom(entityType.ClrType);
+
+            if (hasTenant && hasBranch)
             {
-                var method = SetGlobalQueryMethod.MakeGenericMethod(entityType.ClrType);
+                var method = SetTenantAndBranchQueryMethod.MakeGenericMethod(entityType.ClrType);
+                method.Invoke(this, new object[] { modelBuilder });
+            }
+            else if (hasTenant)
+            {
+                var method = SetTenantQueryMethod.MakeGenericMethod(entityType.ClrType);
                 method.Invoke(this, new object[] { modelBuilder });
             }
         }
     }
 
-    private static readonly MethodInfo SetGlobalQueryMethod =
+    // Tenant-only filter
+    private static readonly MethodInfo SetTenantQueryMethod =
         typeof(BaseDbContext)
             .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-            .Single(m => m.Name == nameof(SetGlobalQuery) && m.IsGenericMethodDefinition);
+            .Single(m => m.Name == nameof(SetTenantQuery) && m.IsGenericMethodDefinition);
 
-    // ✅ Instance method that captures 'this' context
-    private void SetGlobalQuery<T>(ModelBuilder modelBuilder) where T : class, IHasTenant
+    private void SetTenantQuery<T>(ModelBuilder modelBuilder) where T : class, IHasTenant
     {
-        // This expression captures 'this._tenantContext' which evaluates dynamically
         modelBuilder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+    }
+
+    // Combined tenant + branch filter
+    private static readonly MethodInfo SetTenantAndBranchQueryMethod =
+        typeof(BaseDbContext)
+            .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+            .Single(m => m.Name == nameof(SetTenantAndBranchQuery) && m.IsGenericMethodDefinition);
+
+    private void SetTenantAndBranchQuery<T>(ModelBuilder modelBuilder)
+        where T : class, IHasTenant, IHasBranch
+    {
+        modelBuilder.Entity<T>().HasQueryFilter(e =>
+            e.TenantId == _tenantContext.TenantId &&
+            (_branchContext == null || _branchContext.BranchId == Guid.Empty || e.BranchId == _branchContext.BranchId));
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var userEmail = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Email)?.Value;
-        var userName = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
-        var entries = ChangeTracker.Entries();
+        var userName  = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
 
-        foreach (var entry in entries)
+        foreach (var entry in ChangeTracker.Entries())
         {
-            if (entry.Entity is AuditableEntity<Guid> auditableEntity)
+            if (entry.Entity is not AuditableEntity<Guid> entity) continue;
+
+            if (entry.State == EntityState.Added)
             {
-                if (entry.State == EntityState.Added)
+                if (_tenantContext.IsMultiTenant)
+                    entity.TenantId = _tenantContext.TenantId;
+
+                // Auto-set BranchId only when not already provided
+                if (entity is IHasBranch branchEntity
+                    && branchEntity.BranchId == Guid.Empty
+                    && _branchContext?.BranchId != null
+                    && _branchContext.BranchId != Guid.Empty)
                 {
-                    // Set TenantId
-                    if (_tenantContext.IsMultiTenant)
-                    {
-                        auditableEntity.TenantId = _tenantContext.TenantId;
-                    }
-
-                    // Set audit fields
-                    auditableEntity.CreatedOn = DateTimeOffset.UtcNow;
-                    auditableEntity.CreatedByName = !string.IsNullOrEmpty(userName) ? userName : "System";
-                    auditableEntity.CreatedByEmail = !string.IsNullOrEmpty(userEmail) ? userEmail : "system@tkdhub.com";
-
-                    if (auditableEntity.StatusId == 0)
-                    {
-                        auditableEntity.StatusId = (short)EntityStatusEnum.Active;
-                    }
+                    branchEntity.BranchId = _branchContext.BranchId;
                 }
 
-                if (entry.State == EntityState.Modified)
-                {
-                    auditableEntity.ModifiedOn = DateTimeOffset.UtcNow;
-                    auditableEntity.ModifiedByName = !string.IsNullOrEmpty(userName) ? userName : "System";
-                    auditableEntity.ModifiedByEmail = !string.IsNullOrEmpty(userEmail) ? userEmail : "system@tkdhub.com";
-                }
+                entity.CreatedOn      = DateTimeOffset.UtcNow;
+                entity.CreatedByName  = !string.IsNullOrEmpty(userName)  ? userName  : "System";
+                entity.CreatedByEmail = !string.IsNullOrEmpty(userEmail) ? userEmail : "system@tkdhub.com";
+
+                if (entity.StatusId == 0)
+                    entity.StatusId = (short)EntityStatusEnum.Active;
+            }
+
+            if (entry.State == EntityState.Modified)
+            {
+                entity.ModifiedOn      = DateTimeOffset.UtcNow;
+                entity.ModifiedByName  = !string.IsNullOrEmpty(userName)  ? userName  : "System";
+                entity.ModifiedByEmail = !string.IsNullOrEmpty(userEmail) ? userEmail : "system@tkdhub.com";
             }
         }
 

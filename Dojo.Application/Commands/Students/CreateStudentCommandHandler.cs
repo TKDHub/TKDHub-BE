@@ -3,43 +3,82 @@ using Dojo.Application.Mappings.Students;
 using Dojo.Application.Models.Student;
 using Dojo.Domain.Constants;
 using Dojo.Domain.Repositories;
+using Shared.Application.Contracts;
 using Shared.Application.Messaging;
+using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
 
 namespace Dojo.Application.Commands.Students;
 
-public sealed record CreateStudentCommand(StudentModel Model) : ICommand<StudentDto>;
+public sealed record CreateStudentCommand(StudentModel Model, Guid BranchId, Guid TenantId) : ICommand<StudentDto>;
 
 internal sealed class CreateStudentCommandHandler : ICommandHandler<CreateStudentCommand, StudentDto>
 {
-    private readonly IStudentRepository _studentRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IStudentRepository          _studentRepository;
+    private readonly ISubscriptionPlanRepository _planRepository;
+    private readonly IBranchService              _branchService;
+    private readonly IUnitOfWork                 _unitOfWork;
 
-    public CreateStudentCommandHandler(IStudentRepository studentRepository, IUnitOfWork unitOfWork)
+    public CreateStudentCommandHandler(
+        IStudentRepository          studentRepository,
+        ISubscriptionPlanRepository planRepository,
+        IBranchService              branchService,
+        IUnitOfWork                 unitOfWork)
     {
         _studentRepository = studentRepository;
+        _planRepository    = planRepository;
+        _branchService     = branchService;
         _unitOfWork        = unitOfWork;
     }
 
     public async Task<Result<StudentDto>> Handle(CreateStudentCommand request, CancellationToken cancellationToken)
     {
+        if (request.BranchId == Guid.Empty)
+            return Result.Failure<StudentDto>(StudentErrors.BranchRequired);
+
         if (string.IsNullOrWhiteSpace(request.Model.FirstName))
             return Result.Failure<StudentDto>(StudentErrors.FirstNameRequired);
 
         if (string.IsNullOrWhiteSpace(request.Model.LastName))
             return Result.Failure<StudentDto>(StudentErrors.LastNameRequired);
 
-        if (string.IsNullOrWhiteSpace(request.Model.Email))
-            return Result.Failure<StudentDto>(StudentErrors.EmailRequired);
+        if (string.IsNullOrWhiteSpace(request.Model.PhoneNumber))
+            return Result.Failure<StudentDto>(StudentErrors.PhoneRequired);
 
-        if (request.Model.BranchId == Guid.Empty)
-            return Result.Failure<StudentDto>(StudentErrors.BranchRequired);
+        // Email uniqueness — only when provided
+        if (!string.IsNullOrWhiteSpace(request.Model.Email))
+        {
+            var emailExists = await _studentRepository.ExistsByEmailAsync(
+                request.Model.Email, null, cancellationToken);
 
-        var emailExists = await _studentRepository.ExistsByEmailAsync(request.Model.Email, null, cancellationToken);
-        if (emailExists)
-            return Result.Failure<StudentDto>(StudentErrors.EmailAlreadyExists);
+            if (emailExists)
+                return Result.Failure<StudentDto>(StudentErrors.EmailAlreadyExists);
+        }
 
-        var student = request.Model.ToEntity();
+        // Subscription plan — must exist and be Active in the current branch
+        if (request.Model.SubscriptionPlanId == Guid.Empty)
+            return Result.Failure<StudentDto>(StudentErrors.SubscriptionRequired);
+
+        var plan = await _planRepository.GetByIdAsync(request.Model.SubscriptionPlanId, cancellationToken);
+        if (plan is null)
+            return Result.Failure<StudentDto>(StudentErrors.NoActivePlans);
+
+        if (plan.StatusId != (short)EntityStatusEnum.Active)
+            return Result.Failure<StudentDto>(StudentErrors.SubscriptionNotActive);
+
+        // Snapshot plan terms + branch currency at the moment of registration.
+        // These values are frozen on the student record and never change when the plan or
+        // branch currency is later updated.
+        var currency = await _branchService.GetCurrencyAsync(request.BranchId, cancellationToken);
+
+        var model = request.Model with
+        {
+            Price          = plan.Price,
+            Currency       = currency ?? "N/A",
+            DurationMonths = plan.DurationMonths
+        };
+
+        var student = model.ToEntity(request.BranchId, request.TenantId);
 
         _studentRepository.Add(student);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

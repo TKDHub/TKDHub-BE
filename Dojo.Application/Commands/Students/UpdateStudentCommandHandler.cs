@@ -3,8 +3,9 @@ using Dojo.Application.Mappings.Students;
 using Dojo.Application.Models.Student;
 using Dojo.Domain.Constants;
 using Dojo.Domain.Repositories;
-using Microsoft.Extensions.Logging;
+using Shared.Application.Contracts;
 using Shared.Application.Messaging;
+using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
 
 namespace Dojo.Application.Commands.Students;
@@ -13,15 +14,18 @@ public sealed record UpdateStudentCommand(StudentModel Model) : ICommand<Student
 
 internal sealed class UpdateStudentCommandHandler : ICommandHandler<UpdateStudentCommand, StudentDto>
 {
-    private readonly IStudentRepository _studentRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<UpdateStudentCommandHandler> _logger;
+    private readonly IStudentRepository          _studentRepository;
+    private readonly ISubscriptionPlanRepository _planRepository;
+    private readonly IUnitOfWork                 _unitOfWork;
 
-    public UpdateStudentCommandHandler(IStudentRepository studentRepository, IUnitOfWork unitOfWork, ILogger<UpdateStudentCommandHandler> logger)
+    public UpdateStudentCommandHandler(
+        IStudentRepository          studentRepository,
+        ISubscriptionPlanRepository planRepository,
+        IUnitOfWork                 unitOfWork)
     {
         _studentRepository = studentRepository;
+        _planRepository    = planRepository;
         _unitOfWork        = unitOfWork;
-        _logger            = logger;
     }
 
     public async Task<Result<StudentDto>> Handle(UpdateStudentCommand request, CancellationToken cancellationToken)
@@ -32,30 +36,38 @@ internal sealed class UpdateStudentCommandHandler : ICommandHandler<UpdateStuden
         if (string.IsNullOrWhiteSpace(request.Model.LastName))
             return Result.Failure<StudentDto>(StudentErrors.LastNameRequired);
 
-        if (string.IsNullOrWhiteSpace(request.Model.Email))
-            return Result.Failure<StudentDto>(StudentErrors.EmailRequired);
+        if (string.IsNullOrWhiteSpace(request.Model.PhoneNumber))
+            return Result.Failure<StudentDto>(StudentErrors.PhoneRequired);
 
-        var student = await _studentRepository.GetByIdIgnoringFiltersAsync(request.Model.StudentId!.Value, cancellationToken);
+        var student = await _studentRepository.GetByIdIgnoringFiltersAsync(
+            request.Model.StudentId!.Value, cancellationToken);
+
         if (student is null)
             return Result.Failure<StudentDto>(StudentErrors.NotFound);
 
-        var newEmail = request.Model.Email.Trim().ToLowerInvariant();
-        if (!string.Equals(student.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+        // Email uniqueness — only when provided and changed
+        if (!string.IsNullOrWhiteSpace(request.Model.Email))
         {
-            var emailExists = await _studentRepository.ExistsByEmailAsync(newEmail, student.Id, cancellationToken);
-            if (emailExists)
+            var newEmail = request.Model.Email.Trim().ToLowerInvariant();
+            if (!string.Equals(student.Email, newEmail, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("Email '{Email}' already in use — update rejected for student {StudentId}", newEmail, student.Id);
-                return Result.Failure<StudentDto>(StudentErrors.EmailAlreadyExists);
+                var emailExists = await _studentRepository.ExistsByEmailAsync(newEmail, student.Id, cancellationToken);
+                if (emailExists)
+                    return Result.Failure<StudentDto>(StudentErrors.EmailAlreadyExists);
             }
         }
 
-        student.ApplyUpdate(request.Model);
+        // Subscription plan — must exist and be Active
+        if (request.Model.SubscriptionPlanId == Guid.Empty)
+            return Result.Failure<StudentDto>(StudentErrors.SubscriptionRequired);
 
+        var plan = await _planRepository.GetByIdAsync(request.Model.SubscriptionPlanId, cancellationToken);
+        if (plan is null || plan.StatusId != (short)EntityStatusEnum.Active)
+            return Result.Failure<StudentDto>(StudentErrors.SubscriptionNotActive);
+
+        student.ApplyUpdate(request.Model);
         _studentRepository.Update(student);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Student {StudentId} updated successfully", student.Id);
 
         return Result.Success(student.ToDto());
     }

@@ -13,12 +13,30 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Shared.Application.Behaviors;
+using Shared.Application.Contracts;
 using Shared.Infrastructure.Authentication;
+using Shared.Infrastructure.Services;
+using Shared.Infrastructure.Settings;
 
 namespace Shared.Infrastructure.Extensions
 {
     public static class ApiServiceExtensions
     {
+        /// <summary>
+        /// Registers <see cref="HttpErrorLogService"/> as the <see cref="IErrorLogService"/>
+        /// implementation for all services. Configure <c>ErrorLogSettings</c> in appsettings
+        /// with the Identity base URL and shared service key.
+        /// </summary>
+        public static IServiceCollection AddHttpErrorLogService(
+            this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<ErrorLogSettings>(
+                configuration.GetSection(ErrorLogSettings.SectionName));
+            services.AddHttpClient("ErrorLogClient");
+            services.AddScoped<IErrorLogService, HttpErrorLogService>();
+            return services;
+        }
+
         /// <summary>
         /// Registers JWT Bearer authentication using <c>JwtSettings</c> from configuration.
         /// </summary>
