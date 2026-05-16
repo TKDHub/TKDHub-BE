@@ -94,8 +94,9 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("ProfileImage")
-                        .HasColumnType("text");
+                    b.Property<string>("ProfileImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
@@ -183,12 +184,17 @@ namespace Dojo.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Dojo.Domain.Entities.Student", b =>
                 {
                     b.HasOne("Dojo.Domain.Entities.SubscriptionPlan", "SubscriptionPlan")
-                        .WithMany()
+                        .WithMany("Students")
                         .HasForeignKey("SubscriptionPlanId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("SubscriptionPlan");
+                });
+
+            modelBuilder.Entity("Dojo.Domain.Entities.SubscriptionPlan", b =>
+                {
+                    b.Navigation("Students");
                 });
 #pragma warning restore 612, 618
         }

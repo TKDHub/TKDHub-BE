@@ -9,4 +9,7 @@ public sealed class SubscriptionPlan : AuditableEntity<Guid>, IHasBranch
     public string? Description    { get; set; }
     public int     DurationMonths { get; set; }
     public decimal Price          { get; set; }
+
+    // ── Relations ─────────────────────────────────────────────────
+    public ICollection<Student> Students { get; set; } = [];
 }

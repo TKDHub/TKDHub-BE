@@ -23,6 +23,20 @@ namespace Shared.Infrastructure.Extensions
     public static class ApiServiceExtensions
     {
         /// <summary>
+        /// Registers <see cref="CloudinaryImageService"/> as the <see cref="IImageService"/>
+        /// implementation. Configure <c>CloudinarySettings</c> in appsettings with
+        /// <c>CloudName</c>, <c>ApiKey</c>, and <c>ApiSecret</c>.
+        /// </summary>
+        public static IServiceCollection AddCloudinaryImages(
+            this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<CloudinarySettings>(
+                configuration.GetSection(CloudinarySettings.SectionName));
+            services.AddScoped<IImageService, CloudinaryImageService>();
+            return services;
+        }
+
+        /// <summary>
         /// Registers <see cref="HttpErrorLogService"/> as the <see cref="IErrorLogService"/>
         /// implementation for all services. Configure <c>ErrorLogSettings</c> in appsettings
         /// with the Identity base URL and shared service key.

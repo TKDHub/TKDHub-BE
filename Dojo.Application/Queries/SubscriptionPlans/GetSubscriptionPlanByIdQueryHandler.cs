@@ -1,5 +1,6 @@
 using Shared.Application.Contracts;
 using Dojo.Application.Dtos.SubscriptionPlans;
+using Dojo.Application.Mappings.Students;
 using Dojo.Application.Mappings.SubscriptionPlans;
 using Dojo.Domain.Constants;
 using Dojo.Domain.Repositories;
@@ -25,13 +26,14 @@ internal sealed class GetSubscriptionPlanByIdQueryHandler : IQueryHandler<GetSub
 
     public async Task<Result<SubscriptionPlanDto>> Handle(GetSubscriptionPlanByIdQuery request, CancellationToken cancellationToken)
     {
-        var plan = await _repository.GetByIdAsync(request.PlanId, cancellationToken);
+        var plan = await _repository.GetByIdWithStudentsAsync(request.PlanId, cancellationToken);
 
         if (plan is null)
             return Result.Failure<SubscriptionPlanDto>(SubscriptionPlanErrors.NotFound);
 
-        var branch = await _branchService.GetBranchAsync(plan.BranchId, cancellationToken);
+        var branch      = await _branchService.GetBranchAsync(plan.BranchId, cancellationToken);
+        var studentDtos = plan.Students.Select(s => s.ToDto()).ToList();
 
-        return Result.Success(plan.ToDto(branch?.Currency ?? "N/A"));
+        return Result.Success(plan.ToDto(branch?.Currency ?? "N/A", studentDtos));
     }
 }

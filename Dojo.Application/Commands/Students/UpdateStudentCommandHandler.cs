@@ -3,7 +3,6 @@ using Dojo.Application.Mappings.Students;
 using Dojo.Application.Models.Student;
 using Dojo.Domain.Constants;
 using Dojo.Domain.Repositories;
-using Shared.Application.Contracts;
 using Shared.Application.Messaging;
 using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
@@ -45,7 +44,6 @@ internal sealed class UpdateStudentCommandHandler : ICommandHandler<UpdateStuden
         if (student is null)
             return Result.Failure<StudentDto>(StudentErrors.NotFound);
 
-        // Email uniqueness — only when provided and changed
         if (!string.IsNullOrWhiteSpace(request.Model.Email))
         {
             var newEmail = request.Model.Email.Trim().ToLowerInvariant();
@@ -57,7 +55,6 @@ internal sealed class UpdateStudentCommandHandler : ICommandHandler<UpdateStuden
             }
         }
 
-        // Subscription plan — must exist and be Active
         if (request.Model.SubscriptionPlanId == Guid.Empty)
             return Result.Failure<StudentDto>(StudentErrors.SubscriptionRequired);
 

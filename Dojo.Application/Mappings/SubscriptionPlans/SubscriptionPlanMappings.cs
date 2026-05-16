@@ -1,4 +1,6 @@
+using Dojo.Application.Dtos.Students;
 using Dojo.Application.Dtos.SubscriptionPlans;
+using Dojo.Application.Mappings.Students;
 using Dojo.Application.Models.SubscriptionPlan;
 using Dojo.Domain.Entities;
 using Shared.Domain.Enums;
@@ -10,7 +12,7 @@ public static class SubscriptionPlanMappings
     public static List<SubscriptionPlanDto> ToListDtos(this IEnumerable<SubscriptionPlan> plans, string currency)
         => plans.Select(p => p.ToDto(currency)).ToList();
 
-    public static SubscriptionPlanDto ToDto(this SubscriptionPlan plan, string currency)
+    public static SubscriptionPlanDto ToDto(this SubscriptionPlan plan, string currency, List<StudentDto>? students = null)
         => new()
         {
             Id             = plan.Id,
@@ -23,7 +25,8 @@ public static class SubscriptionPlanMappings
             Currency       = currency,
             Status         = ((EntityStatusEnum)plan.StatusId).ToString(),
             CreatedOn      = plan.CreatedOn,
-            ModifiedOn     = plan.ModifiedOn
+            ModifiedOn     = plan.ModifiedOn,
+            Students       = students
         };
 
     public static SubscriptionPlan ToEntity(this SubscriptionPlanModel model, Guid branchId, Guid tenantId)

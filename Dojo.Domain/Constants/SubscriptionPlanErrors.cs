@@ -13,4 +13,5 @@ public static class SubscriptionPlanErrors
     public static readonly Error BranchNotFound     = new("SubscriptionPlan.BranchNotFound",     "Branch not found.");
     public static readonly Error TenantBranchMismatch = new("SubscriptionPlan.TenantBranchMismatch", "Branch does not belong to the specified tenant.");
     public static readonly Error AlreadyArchived    = new("SubscriptionPlan.AlreadyArchived",    "Subscription plan is already archived.");
+    public static readonly Error AlreadyActive      = new("SubscriptionPlan.AlreadyActive",      "Subscription plan is already active.");
 }

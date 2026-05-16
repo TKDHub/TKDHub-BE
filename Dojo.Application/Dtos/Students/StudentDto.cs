@@ -18,9 +18,10 @@ public sealed class StudentDto
     public string   Gender      { get; init; } = string.Empty;
 
     // ── Membership ───────────────────────────────────────────────
-    public DateOnly StartDate          { get; init; }
-    public string   BeltLevel          { get; init; } = string.Empty;
-    public Guid     SubscriptionPlanId { get; init; }
+    public DateOnly StartDate              { get; init; }
+    public string   BeltLevel              { get; init; } = string.Empty;
+    public Guid     SubscriptionPlanId     { get; init; }
+    public string   SubscriptionPlanName   { get; init; } = string.Empty;
 
     // ── Snapshot (frozen at registration) ────────────────────────
     public decimal  Price          { get; init; }
@@ -32,7 +33,7 @@ public sealed class StudentDto
     public DateOnly EndDate => StartDate.AddMonths(DurationMonths);
 
     // ── Optional ─────────────────────────────────────────────────
-    public string? ProfileImage  { get; init; }
+    public string? ProfileImageUrl { get; init; }
     public string? EmergencyContact { get; init; }
 
     // ── Status ───────────────────────────────────────────────────

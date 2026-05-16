@@ -16,6 +16,7 @@ internal sealed class StudentRepository : IStudentRepository
 
     public async Task<Student?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.Students
+            .Include(s => s.SubscriptionPlan)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
     public async Task<Student?> GetByIdIgnoringFiltersAsync(Guid id, CancellationToken cancellationToken = default)
@@ -31,6 +32,7 @@ internal sealed class StudentRepository : IStudentRepository
 
     public async Task<PagedResult<Student>> GetPagedAsync(PagedRequest request, CancellationToken cancellationToken = default)
         => await _dbContext.Students
+            .Include(s => s.SubscriptionPlan)
             .Where(s => s.StatusId == (short)StudentStatusEnum.Active)
             .OrderBy(s => s.LastName).ThenBy(s => s.FirstName)
             .ToPagedResultAsync(request, cancellationToken);

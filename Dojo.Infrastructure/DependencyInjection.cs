@@ -30,6 +30,9 @@ namespace Dojo.Infrastructure
             services.AddHttpClient("IdentityApi");
             services.AddScoped<IBranchService, IdentityBranchService>();
 
+            // Cloudflare Images
+            services.AddCloudinaryImages(configuration);
+
             // Centralised error logging (HTTP → Identity)
             services.AddHttpErrorLogService(configuration);
 

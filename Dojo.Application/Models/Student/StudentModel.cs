@@ -20,7 +20,7 @@ public sealed record StudentModel
     public Guid     SubscriptionPlanId { get; init; }
 
     // ── Optional ─────────────────────────────────────────────────
-    public string? ProfileImage  { get; init; }
+    public string? ProfileImageUrl  { get; init; }
     public string? EmergencyContact { get; init; }
 
     // ── Snapshot (frozen at registration) ────────────────────────

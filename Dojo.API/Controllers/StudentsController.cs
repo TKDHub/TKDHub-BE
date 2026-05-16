@@ -68,7 +68,9 @@ public class StudentsController : BaseApiController
             CreatedByName  = GetUserNameFromClaims()
         };
 
-        var result = await _sender.Send(new CreateStudentCommand(model, _branchContext.BranchId, _tenantContext.TenantId), cancellationToken);
+        var result = await _sender.Send(
+            new CreateStudentCommand(model, _branchContext.BranchId, _tenantContext.TenantId),
+            cancellationToken);
 
         if (result.IsFailure)
             return result.Error == StudentErrors.EmailAlreadyExists
@@ -110,6 +112,35 @@ public class StudentsController : BaseApiController
         }
 
         return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Uploads or replaces the student's profile image.
+    /// Accepted: JPEG, PNG, WebP — max 10 MB.
+    /// Returns the Cloudinary delivery URL saved on the student record.
+    /// </summary>
+    [HttpPost("{id:guid}/image")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UploadStudentImage(
+        Guid              id,
+        IFormFile         image,
+        CancellationToken cancellationToken = default)
+    {
+        await using var stream = image.OpenReadStream();
+
+        var result = await _sender.Send(
+            new UploadStudentImageCommand(id, stream, image.FileName, image.ContentType, image.Length),
+            cancellationToken);
+
+        if (result.IsFailure)
+            return result.Error == StudentErrors.NotFound
+                ? NotFound(new { error = result.Error.Description })
+                : BadRequest(new { error = result.Error.Description });
+
+        return Ok(new { url = result.Value });
     }
 
     [HttpDelete("{id:guid}")]

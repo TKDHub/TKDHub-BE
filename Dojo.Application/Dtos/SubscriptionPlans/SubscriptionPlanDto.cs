@@ -1,3 +1,5 @@
+using Dojo.Application.Dtos.Students;
+
 namespace Dojo.Application.Dtos.SubscriptionPlans;
 
 public sealed class SubscriptionPlanDto
@@ -11,6 +13,9 @@ public sealed class SubscriptionPlanDto
     public decimal  Price          { get; init; }
     public string   Currency       { get; init; } = string.Empty;
     public string   Status         { get; init; } = string.Empty;
-    public DateTimeOffset CreatedOn   { get; init; }
+    public DateTimeOffset  CreatedOn  { get; init; }
     public DateTimeOffset? ModifiedOn { get; init; }
+
+    /// <summary>Populated only on GetById — students currently enrolled in this plan.</summary>
+    public List<StudentDto>? Students { get; init; }
 }

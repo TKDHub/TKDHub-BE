@@ -51,7 +51,7 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.Property(s => s.SubscriptionPlanId).IsRequired();
 
         builder.HasOne(s => s.SubscriptionPlan)
-            .WithMany()
+            .WithMany(p => p.Students)
             .HasForeignKey(s => s.SubscriptionPlanId)
             .OnDelete(DeleteBehavior.Restrict);   // archiving a plan must not cascade-delete students
 
@@ -67,7 +67,7 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.Property(s => s.DurationMonths).IsRequired();
 
         // ── Optional ─────────────────────────────────────────────────
-        builder.Property(s => s.ProfileImage).HasColumnType("text"); // supports base64 strings
+        builder.Property(s => s.ProfileImageUrl).HasMaxLength(500);  // Cloudflare Images URL
         builder.Property(s => s.EmergencyContact).HasMaxLength(200);
 
         // ── Computed ─────────────────────────────────────────────────

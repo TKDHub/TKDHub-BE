@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Enums;
 using Shared.Domain.Pagination;
 using Shared.Infrastructure.Extensions;
+using Dojo.Domain.Enums;
 
 namespace Dojo.Infrastructure.Persistence.Repositories;
 
@@ -16,6 +17,14 @@ internal sealed class SubscriptionPlanRepository : ISubscriptionPlanRepository
 
     public async Task<SubscriptionPlan?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.SubscriptionPlans
+            .FirstOrDefaultAsync(
+                p => p.Id == id && p.StatusId != (short)EntityStatusEnum.Deleted,
+                cancellationToken);
+
+    public async Task<SubscriptionPlan?> GetByIdWithStudentsAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _dbContext.SubscriptionPlans
+            .Include(p => p.Students.Where(s => s.StatusId == (short)StudentStatusEnum.Active)
+                                    .OrderBy(s => s.LastName).ThenBy(s => s.FirstName))
             .FirstOrDefaultAsync(
                 p => p.Id == id && p.StatusId != (short)EntityStatusEnum.Deleted,
                 cancellationToken);

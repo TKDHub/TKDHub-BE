@@ -5,6 +5,7 @@ using Dojo.Domain.Repositories;
 using Shared.Application.Messaging;
 using Shared.Domain.Primitives;
 
+
 namespace Dojo.Application.Queries.Students;
 
 public sealed record GetStudentByIdQuery(Guid StudentId) : IQuery<StudentDto>;

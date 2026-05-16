@@ -15,4 +15,8 @@ public static class StudentErrors
     public static readonly Error SubscriptionRequired   = new("Student.SubscriptionRequired",   "Subscription plan is required.");
     public static readonly Error SubscriptionNotActive  = new("Student.SubscriptionNotActive",  "The selected subscription plan is not active. Please choose an active plan.");
     public static readonly Error NoActivePlans          = new("Student.NoActivePlans",          "No active subscription plans exist for this branch. Please create one before registering students.");
+    public static readonly Error ImageUploadFailed      = new("Student.ImageUploadFailed",      "Failed to upload profile image. Please try again.");
+    public static readonly Error ImageEmpty            = new("Student.ImageEmpty",             "Image file is empty.");
+    public static readonly Error ImageTooLarge         = new("Student.ImageTooLarge",          "Image exceeds the 10 MB limit.");
+    public static readonly Error ImageInvalidType      = new("Student.ImageInvalidType",       "Only JPEG, PNG, and WebP images are accepted.");
 }

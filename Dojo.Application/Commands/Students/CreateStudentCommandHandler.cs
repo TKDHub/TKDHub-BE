@@ -36,9 +36,7 @@ internal sealed class CreateStudentCommandHandler : ICommandHandler<CreateStuden
         if (request.BranchId == Guid.Empty)
             return Result.Failure<StudentDto>(StudentErrors.BranchRequired);
 
-        // Verify branch exists and belongs to the requesting tenant
         var branch = await _branchService.GetBranchAsync(request.BranchId, cancellationToken);
-
         if (branch is null)
             return Result.Failure<StudentDto>(StudentErrors.BranchNotFound);
 
@@ -54,17 +52,14 @@ internal sealed class CreateStudentCommandHandler : ICommandHandler<CreateStuden
         if (string.IsNullOrWhiteSpace(request.Model.PhoneNumber))
             return Result.Failure<StudentDto>(StudentErrors.PhoneRequired);
 
-        // Email uniqueness — only when provided
         if (!string.IsNullOrWhiteSpace(request.Model.Email))
         {
             var emailExists = await _studentRepository.ExistsByEmailAsync(
                 request.Model.Email, null, cancellationToken);
-
             if (emailExists)
                 return Result.Failure<StudentDto>(StudentErrors.EmailAlreadyExists);
         }
 
-        // Subscription plan — must exist and be Active in the current branch
         if (request.Model.SubscriptionPlanId == Guid.Empty)
             return Result.Failure<StudentDto>(StudentErrors.SubscriptionRequired);
 
@@ -75,9 +70,7 @@ internal sealed class CreateStudentCommandHandler : ICommandHandler<CreateStuden
         if (plan.StatusId != (short)EntityStatusEnum.Active)
             return Result.Failure<StudentDto>(StudentErrors.SubscriptionNotActive);
 
-        // Snapshot plan terms + branch currency at the moment of registration.
-        // These values are frozen on the student record and never change when the plan or
-        // branch currency is later updated.
+        // Snapshot plan terms + branch currency at the moment of registration
         var model = request.Model with
         {
             Price          = plan.Price,

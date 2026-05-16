@@ -14,25 +14,26 @@ public static class StudentMappings
     public static StudentDto ToDto(this Student student)
         => new()
         {
-            Id                 = student.Id,
-            TenantId           = student.TenantId,
-            BranchId           = student.BranchId,
-            FirstName          = student.FirstName,
-            LastName           = student.LastName,
-            FullName           = student.FullName,
-            Email              = student.Email,
-            PhoneNumber        = student.PhoneNumber,
-            DateOfBirth        = student.DateOfBirth,
-            Gender             = student.Gender.ToString(),
-            StartDate          = student.StartDate,
-            BeltLevel          = student.BeltLevel.ToString(),
-            SubscriptionPlanId = student.SubscriptionPlanId,
-            Price              = student.Price,
-            Currency           = student.Currency,
-            DurationMonths     = student.DurationMonths,
-            ProfileImage    = student.ProfileImage,
-            EmergencyContact   = student.EmergencyContact,
-            Status             = ((StudentStatusEnum)student.StatusId).ToString()
+            Id                   = student.Id,
+            TenantId             = student.TenantId,
+            BranchId             = student.BranchId,
+            FirstName            = student.FirstName,
+            LastName             = student.LastName,
+            FullName             = student.FullName,
+            Email                = student.Email,
+            PhoneNumber          = student.PhoneNumber,
+            DateOfBirth          = student.DateOfBirth,
+            Gender               = student.Gender.ToString(),
+            StartDate            = student.StartDate,
+            BeltLevel            = student.BeltLevel.ToString(),
+            SubscriptionPlanId   = student.SubscriptionPlanId,
+            SubscriptionPlanName = student.SubscriptionPlan?.Name ?? string.Empty,
+            Price                = student.Price,
+            Currency             = student.Currency,
+            DurationMonths       = student.DurationMonths,
+            ProfileImageUrl      = student.ProfileImageUrl,
+            EmergencyContact     = student.EmergencyContact,
+            Status               = ((StudentStatusEnum)student.StatusId).ToString()
         };
 
     public static Student ToEntity(this StudentModel model, Guid branchId, Guid tenantId)
@@ -52,7 +53,7 @@ public static class StudentMappings
             Price              = model.Price,
             Currency           = model.Currency,
             DurationMonths     = model.DurationMonths,
-            ProfileImage    = model.ProfileImage?.Trim(),
+            ProfileImageUrl    = model.ProfileImageUrl?.Trim(),
             EmergencyContact   = model.EmergencyContact?.Trim(),
             StatusId           = (short)StudentStatusEnum.Active,
             CreatedOn          = DateTimeOffset.UtcNow,
@@ -71,7 +72,9 @@ public static class StudentMappings
         student.StartDate          = model.StartDate;
         student.BeltLevel          = Enum.TryParse<BeltLevelEnum>(model.BeltLevel, ignoreCase: true, out var belt) ? belt : student.BeltLevel;
         student.SubscriptionPlanId = model.SubscriptionPlanId;
-        student.ProfileImage    = model.ProfileImage?.Trim();
+        // Only overwrite when a new image URL was supplied; null means "no change"
+        if (model.ProfileImageUrl is not null)
+            student.ProfileImageUrl = model.ProfileImageUrl.Trim();
         student.EmergencyContact   = model.EmergencyContact?.Trim();
         student.ModifiedOn         = DateTimeOffset.UtcNow;
         student.ModifiedByEmail    = model.ModifiedByEmail;

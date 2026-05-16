@@ -120,6 +120,27 @@ public class SubscriptionPlansController : BaseApiController
         return Ok(result.Value);
     }
 
+    /// <summary>Restores an archived subscription plan back to active.</summary>
+    [HttpPatch("{id:guid}/restore")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RestoreSubscriptionPlan(Guid id, CancellationToken cancellationToken = default)
+    {
+        var result = await _sender.Send(new RestoreSubscriptionPlanCommand(id), cancellationToken);
+
+        if (result.IsFailure)
+        {
+            if (result.Error == SubscriptionPlanErrors.NotFound)
+                return NotFound(new { error = result.Error.Description });
+
+            return BadRequest(new { error = result.Error.Description });
+        }
+
+        return NoContent();
+    }
+
     /// <summary>Archives a subscription plan (soft-disable). Plans are never hard-deleted.</summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

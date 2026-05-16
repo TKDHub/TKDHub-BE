@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Dojo.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(DojoDbContext))]
-    [Migration("20260516112600_ProfileImageUrl_Text")]
-    partial class ProfileImageUrl_Text
+    [Migration("20260516145448_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -98,7 +98,8 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ProfileImageUrl")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
@@ -186,12 +187,17 @@ namespace Dojo.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Dojo.Domain.Entities.Student", b =>
                 {
                     b.HasOne("Dojo.Domain.Entities.SubscriptionPlan", "SubscriptionPlan")
-                        .WithMany()
+                        .WithMany("Students")
                         .HasForeignKey("SubscriptionPlanId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("SubscriptionPlan");
+                });
+
+            modelBuilder.Entity("Dojo.Domain.Entities.SubscriptionPlan", b =>
+                {
+                    b.Navigation("Students");
                 });
 #pragma warning restore 612, 618
         }
