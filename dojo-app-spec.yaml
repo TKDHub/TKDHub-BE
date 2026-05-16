@@ -46,6 +46,20 @@ services:
     scope: RUN_AND_BUILD_TIME
     type: SECRET
     value: "cf1a46ba09439dbebd58a60b27ec0442ec9942313db1d3779efe1387c58f27b3"
+  - key: JwtSettings__Secret
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: "e0ebd3ca29d487ca54aad74109d4fe2ff1a9e3da9443e94971ba40dd0e1b77f2"
+  - key: CloudinarySettings__CloudName
+    scope: RUN_AND_BUILD_TIME
+    value: "dlrjvaexg"
+  - key: CloudinarySettings__ApiKey
+    scope: RUN_AND_BUILD_TIME
+    value: "318563189243923"
+  - key: CloudinarySettings__ApiSecret
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: "q1jyCWK8Js4tFpwClYDJhvMuVYY"
 ingress:
   rules:
   - component:
