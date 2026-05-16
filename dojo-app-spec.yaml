@@ -38,7 +38,14 @@ services:
     value: X-Rest-Key
   - key: IdentityApiSettings__BaseUrl
     scope: RUN_AND_BUILD_TIME
-    value: "https://tkdhub-identity-api-url"
+    value: "https://tkdhub-identity-s6dy2.ondigitalocean.app"
+  - key: ErrorLogSettings__BaseUrl
+    scope: RUN_AND_BUILD_TIME
+    value: "https://tkdhub-identity-s6dy2.ondigitalocean.app"
+  - key: ErrorLogSettings__ServiceKey
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: "cf1a46ba09439dbebd58a60b27ec0442ec9942313db1d3779efe1387c58f27b3"
 ingress:
   rules:
   - component:

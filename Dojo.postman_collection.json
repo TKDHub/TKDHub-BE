@@ -206,7 +206,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Hassan\",\n  \"email\": \"ali.hassan@test.com\",\n  \"phoneNumber\": \"+962791234567\",\n  \"dateOfBirth\": \"2005-03-15\",\n  \"gender\": \"Male\",\n  \"startDate\": \"2026-01-01\",\n  \"beltLevel\": \"White\",\n  \"subscriptionPlanId\": \"{{planId}}\",\n  \"emergencyContact\": \"Father: +962799999999\",\n  \"profileImageUrl\": null\n}"
+              "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Hassan\",\n  \"email\": \"ali.hassan@test.com\",\n  \"phoneNumber\": \"+962791234567\",\n  \"dateOfBirth\": \"2005-03-15\",\n  \"gender\": \"Male\",\n  \"startDate\": \"2026-01-01\",\n  \"beltLevel\": \"White\",\n  \"subscriptionPlanId\": \"{{planId}}\",\n  \"emergencyContact\": \"Father: +962799999999\",\n  \"profileImage\": \"https://cdn.example.com/students/ali-hassan.jpg\"\n}"
             }
           }
         },
@@ -226,7 +226,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Hassan\",\n  \"email\": \"ali.hassan@test.com\",\n  \"phoneNumber\": \"+962791234567\",\n  \"dateOfBirth\": \"2005-03-15\",\n  \"gender\": \"Male\",\n  \"startDate\": \"2026-01-01\",\n  \"beltLevel\": \"Yellow\",\n  \"subscriptionPlanId\": \"{{planId}}\",\n  \"emergencyContact\": \"Father: +962799999999\",\n  \"profileImageUrl\": \"https://cdn.example.com/students/ali.jpg\"\n}"
+              "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Hassan\",\n  \"email\": \"ali.hassan@test.com\",\n  \"phoneNumber\": \"+962791234567\",\n  \"dateOfBirth\": \"2005-03-15\",\n  \"gender\": \"Male\",\n  \"startDate\": \"2026-01-01\",\n  \"beltLevel\": \"Yellow\",\n  \"subscriptionPlanId\": \"{{planId}}\",\n  \"emergencyContact\": \"Father: +962799999999\",\n  \"profileImage\": \"https://cdn.example.com/students/ali.jpg\"\n}"
             }
           }
         },
