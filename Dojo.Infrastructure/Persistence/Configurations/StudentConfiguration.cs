@@ -67,7 +67,7 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.Property(s => s.DurationMonths).IsRequired();
 
         // ── Optional ─────────────────────────────────────────────────
-        builder.Property(s => s.ProfileImageUrl).HasMaxLength(500);
+        builder.Property(s => s.ProfileImage).HasColumnType("text"); // supports base64 strings
         builder.Property(s => s.EmergencyContact).HasMaxLength(200);
 
         // ── Computed ─────────────────────────────────────────────────

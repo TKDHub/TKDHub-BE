@@ -1,3 +1,5 @@
+using Shared.Application.Models;
+
 namespace Shared.Application.Contracts;
 
 /// <summary>
@@ -6,8 +8,8 @@ namespace Shared.Application.Contracts;
 public interface IBranchService
 {
     /// <summary>
-    /// Returns the ISO currency code for the given branch, or <c>null</c> if the branch
-    /// is not found or has no currency configured.
+    /// Returns the full <see cref="BranchInfo"/> for the given branch,
+    /// or <c>null</c> if not found.
     /// </summary>
-    Task<string?> GetCurrencyAsync(Guid branchId, CancellationToken cancellationToken = default);
+    Task<BranchInfo?> GetBranchAsync(Guid branchId, CancellationToken cancellationToken = default);
 }

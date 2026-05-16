@@ -28,7 +28,7 @@ public sealed class Student : AuditableEntity<Guid>, IHasBranch
     public int     DurationMonths { get; set; }
 
     // ── Optional ─────────────────────────────────────────────────
-    public string? ProfileImageUrl  { get; set; }
+    public string? ProfileImage  { get; set; }
     public string? EmergencyContact { get; set; }
 
     // ── Computed ─────────────────────────────────────────────────

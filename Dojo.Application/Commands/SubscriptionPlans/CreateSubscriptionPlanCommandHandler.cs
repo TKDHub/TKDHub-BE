@@ -42,6 +42,15 @@ internal sealed class CreateSubscriptionPlanCommandHandler : ICommandHandler<Cre
         if (request.Model.Price < 0)
             return Result.Failure<SubscriptionPlanDto>(SubscriptionPlanErrors.PriceInvalid);
 
+        // Verify branch exists and belongs to the requesting tenant
+        var branch = await _branchService.GetBranchAsync(request.BranchId, cancellationToken);
+
+        if (branch is null)
+            return Result.Failure<SubscriptionPlanDto>(SubscriptionPlanErrors.BranchNotFound);
+
+        if (branch.TenantId != request.TenantId)
+            return Result.Failure<SubscriptionPlanDto>(SubscriptionPlanErrors.TenantBranchMismatch);
+
         var nameExists = await _repository.ExistsByNameAsync(
             request.Model.Name, request.BranchId, null, cancellationToken);
 
@@ -53,8 +62,6 @@ internal sealed class CreateSubscriptionPlanCommandHandler : ICommandHandler<Cre
         _repository.Add(plan);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var currency = await _branchService.GetCurrencyAsync(request.BranchId, cancellationToken);
-
-        return Result.Success(plan.ToDto(currency ?? "N/A"));
+        return Result.Success(plan.ToDto(branch.Currency ?? "N/A"));
     }
 }

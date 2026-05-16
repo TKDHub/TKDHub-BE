@@ -30,7 +30,7 @@ public static class StudentMappings
             Price              = student.Price,
             Currency           = student.Currency,
             DurationMonths     = student.DurationMonths,
-            ProfileImageUrl    = student.ProfileImageUrl,
+            ProfileImage    = student.ProfileImage,
             EmergencyContact   = student.EmergencyContact,
             Status             = ((StudentStatusEnum)student.StatusId).ToString()
         };
@@ -52,7 +52,7 @@ public static class StudentMappings
             Price              = model.Price,
             Currency           = model.Currency,
             DurationMonths     = model.DurationMonths,
-            ProfileImageUrl    = model.ProfileImageUrl?.Trim(),
+            ProfileImage    = model.ProfileImage?.Trim(),
             EmergencyContact   = model.EmergencyContact?.Trim(),
             StatusId           = (short)StudentStatusEnum.Active,
             CreatedOn          = DateTimeOffset.UtcNow,
@@ -71,7 +71,7 @@ public static class StudentMappings
         student.StartDate          = model.StartDate;
         student.BeltLevel          = Enum.TryParse<BeltLevelEnum>(model.BeltLevel, ignoreCase: true, out var belt) ? belt : student.BeltLevel;
         student.SubscriptionPlanId = model.SubscriptionPlanId;
-        student.ProfileImageUrl    = model.ProfileImageUrl?.Trim();
+        student.ProfileImage    = model.ProfileImage?.Trim();
         student.EmergencyContact   = model.EmergencyContact?.Trim();
         student.ModifiedOn         = DateTimeOffset.UtcNow;
         student.ModifiedByEmail    = model.ModifiedByEmail;

@@ -45,6 +45,15 @@ internal sealed class UpdateSubscriptionPlanCommandHandler : ICommandHandler<Upd
         if (plan is null)
             return Result.Failure<SubscriptionPlanDto>(SubscriptionPlanErrors.NotFound);
 
+        // Verify branch still exists and belongs to the plan's tenant
+        var branch = await _branchService.GetBranchAsync(plan.BranchId, cancellationToken);
+
+        if (branch is null)
+            return Result.Failure<SubscriptionPlanDto>(SubscriptionPlanErrors.BranchNotFound);
+
+        if (branch.TenantId != plan.TenantId)
+            return Result.Failure<SubscriptionPlanDto>(SubscriptionPlanErrors.TenantBranchMismatch);
+
         var nameExists = await _repository.ExistsByNameAsync(
             request.Model.Name, plan.BranchId, plan.Id, cancellationToken);
 
@@ -55,8 +64,6 @@ internal sealed class UpdateSubscriptionPlanCommandHandler : ICommandHandler<Upd
         _repository.Update(plan);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var currency = await _branchService.GetCurrencyAsync(plan.BranchId, cancellationToken);
-
-        return Result.Success(plan.ToDto(currency ?? "N/A"));
+        return Result.Success(plan.ToDto(branch.Currency ?? "N/A"));
     }
 }

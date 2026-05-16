@@ -36,6 +36,15 @@ internal sealed class CreateStudentCommandHandler : ICommandHandler<CreateStuden
         if (request.BranchId == Guid.Empty)
             return Result.Failure<StudentDto>(StudentErrors.BranchRequired);
 
+        // Verify branch exists and belongs to the requesting tenant
+        var branch = await _branchService.GetBranchAsync(request.BranchId, cancellationToken);
+
+        if (branch is null)
+            return Result.Failure<StudentDto>(StudentErrors.BranchNotFound);
+
+        if (branch.TenantId != request.TenantId)
+            return Result.Failure<StudentDto>(StudentErrors.TenantBranchMismatch);
+
         if (string.IsNullOrWhiteSpace(request.Model.FirstName))
             return Result.Failure<StudentDto>(StudentErrors.FirstNameRequired);
 
@@ -69,12 +78,10 @@ internal sealed class CreateStudentCommandHandler : ICommandHandler<CreateStuden
         // Snapshot plan terms + branch currency at the moment of registration.
         // These values are frozen on the student record and never change when the plan or
         // branch currency is later updated.
-        var currency = await _branchService.GetCurrencyAsync(request.BranchId, cancellationToken);
-
         var model = request.Model with
         {
             Price          = plan.Price,
-            Currency       = currency ?? "N/A",
+            Currency       = branch.Currency ?? "N/A",
             DurationMonths = plan.DurationMonths
         };
 

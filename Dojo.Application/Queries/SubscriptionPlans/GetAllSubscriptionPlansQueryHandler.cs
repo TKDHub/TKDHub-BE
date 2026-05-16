@@ -30,12 +30,12 @@ internal sealed class GetAllSubscriptionPlansQueryHandler : IQueryHandler<GetAll
         GetAllSubscriptionPlansQuery request,
         CancellationToken cancellationToken)
     {
-        var currency = await _branchService.GetCurrencyAsync(_branchContext.BranchId, cancellationToken);
+        var branch = await _branchService.GetBranchAsync(_branchContext.BranchId, cancellationToken);
 
         var result = await _repository.GetPagedAsync(request.Request, request.Status, cancellationToken);
 
         return Result.Success(PagedResult<SubscriptionPlanDto>.Create(
-            result.Items.ToListDtos(currency ?? "N/A"),
+            result.Items.ToListDtos(branch?.Currency ?? "N/A"),
             result.TotalCount,
             result.Page,
             result.PageSize));

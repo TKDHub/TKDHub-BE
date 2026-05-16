@@ -32,7 +32,7 @@ public sealed class StudentDto
     public DateOnly EndDate => StartDate.AddMonths(DurationMonths);
 
     // ── Optional ─────────────────────────────────────────────────
-    public string? ProfileImageUrl  { get; init; }
+    public string? ProfileImage  { get; init; }
     public string? EmergencyContact { get; init; }
 
     // ── Status ───────────────────────────────────────────────────

@@ -10,6 +10,8 @@ public static class StudentErrors
     public static readonly Error PhoneRequired          = new("Student.PhoneRequired",          "Phone number is required.");
     public static readonly Error EmailAlreadyExists     = new("Student.EmailExists",            "A student with this email already exists.");
     public static readonly Error BranchRequired         = new("Student.BranchRequired",         "Branch is required.");
+    public static readonly Error BranchNotFound        = new("Student.BranchNotFound",         "Branch not found.");
+    public static readonly Error TenantBranchMismatch  = new("Student.TenantBranchMismatch",   "Branch does not belong to the specified tenant.");
     public static readonly Error SubscriptionRequired   = new("Student.SubscriptionRequired",   "Subscription plan is required.");
     public static readonly Error SubscriptionNotActive  = new("Student.SubscriptionNotActive",  "The selected subscription plan is not active. Please choose an active plan.");
     public static readonly Error NoActivePlans          = new("Student.NoActivePlans",          "No active subscription plans exist for this branch. Please create one before registering students.");

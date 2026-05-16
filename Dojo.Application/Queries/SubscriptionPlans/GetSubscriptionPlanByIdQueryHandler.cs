@@ -30,8 +30,8 @@ internal sealed class GetSubscriptionPlanByIdQueryHandler : IQueryHandler<GetSub
         if (plan is null)
             return Result.Failure<SubscriptionPlanDto>(SubscriptionPlanErrors.NotFound);
 
-        var currency = await _branchService.GetCurrencyAsync(plan.BranchId, cancellationToken);
+        var branch = await _branchService.GetBranchAsync(plan.BranchId, cancellationToken);
 
-        return Result.Success(plan.ToDto(currency ?? "N/A"));
+        return Result.Success(plan.ToDto(branch?.Currency ?? "N/A"));
     }
 }
