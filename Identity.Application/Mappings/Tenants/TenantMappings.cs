@@ -13,7 +13,7 @@ namespace Identity.Application.Mappings.Tenants
             return tenants.Select(t => t.ToDto()).ToList();
         }
 
-        public static TenantDto ToDto(this Tenant tenant)
+        public static TenantDto ToDto(this Tenant tenant, bool includeBranches = true)
         {
             return new TenantDto
             {
@@ -25,7 +25,7 @@ namespace Identity.Application.Mappings.Tenants
                 SubscriptionPlan = tenant.SubscriptionPlan,
                 MaxUsers = tenant.MaxUsers,
                 CreatedOn = tenant.CreatedOn.UtcDateTime,
-                Branches = tenant.Branches?.ToListDtos() ?? new()
+                Branches = includeBranches ? tenant.Branches?.ToListDtos() ?? new() : new()
             };
         }
 

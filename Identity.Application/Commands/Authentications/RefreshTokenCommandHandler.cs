@@ -75,7 +75,7 @@ namespace Identity.Application.Commands.Authentications
 
             _logger.LogInformation("Token refreshed successfully for user {UserId}", user.Id);
 
-            return Result.Success(user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt, tenant.ToDto()));
+            return Result.Success(user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt, tenant.ToDto(includeBranches: false)));
         }
     }
 }

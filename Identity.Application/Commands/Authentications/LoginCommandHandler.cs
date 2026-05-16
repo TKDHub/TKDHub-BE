@@ -88,7 +88,7 @@ namespace Identity.Application.Commands.Authentications
             _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
             // Create response
-            var response = user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt, tenant.ToDto());
+            var response = user.ToAuthDto(authenticationResponse.AccessToken, authenticationResponse.RefreshToken, authenticationResponse.ExpiresAt, tenant.ToDto(includeBranches: false));
 
             return Result.Success(response);
         }
