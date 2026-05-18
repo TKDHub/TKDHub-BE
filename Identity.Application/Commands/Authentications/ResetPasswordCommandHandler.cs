@@ -54,10 +54,12 @@ namespace Identity.Application.Commands.Authentications
                 return Result.Failure<string>(OtpErrors.NotVerified);
             }
 
-            user.PasswordHash = _passwordHasher.HashPassword(request.model.NewPassword);
-            user.PasswordResetToken = null;
+            user.PasswordHash                 = _passwordHasher.HashPassword(request.model.NewPassword);
+            user.PasswordResetToken           = null;
             user.PasswordResetTokenExpiryTime = null;
-            user.ModifiedOn = DateTimeOffset.UtcNow;
+            user.FailedLoginAttempts          = 0;
+            user.LockoutEnd                   = null;
+            user.ModifiedOn                   = DateTimeOffset.UtcNow;
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
