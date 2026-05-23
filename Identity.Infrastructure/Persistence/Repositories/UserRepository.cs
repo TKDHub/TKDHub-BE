@@ -83,6 +83,7 @@ internal sealed class UserRepository : IUserRepository
     {
         return await _dbContext.Users
             .Include(u => u.UserRoles)
+            .Include(u => u.Branches.Where(b => b.StatusId == (short)EntityStatusEnum.Active))
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken, cancellationToken);
     }

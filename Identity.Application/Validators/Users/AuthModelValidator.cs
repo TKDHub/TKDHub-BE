@@ -1,18 +1,18 @@
 using FluentValidation;
 using Identity.Application.Models.Auth;
+using Identity.Application.Validators.ValidationMessages;
 
-namespace Identity.Application.Validators.Users
+namespace Identity.Application.Validators.Users;
+
+public sealed class AuthModelValidator : AbstractValidator<AuthModel>
 {
-    public sealed class AuthModelValidator : AbstractValidator<AuthModel>
+    public AuthModelValidator()
     {
-        public AuthModelValidator()
-        {
-            RuleFor(x => x.Username)
-                .NotEmpty().WithMessage("Username is required")
-                .MaximumLength(150).WithMessage("Username must not exceed 150 characters");
+        RuleFor(x => x.Username)
+            .NotEmpty().WithMessage(AuthValidationMessages.UsernameRequired)
+            .MaximumLength(150).WithMessage(AuthValidationMessages.UsernameMaxLength);
 
-            RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Password is required");
-        }
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage(AuthValidationMessages.PasswordRequired);
     }
 }
