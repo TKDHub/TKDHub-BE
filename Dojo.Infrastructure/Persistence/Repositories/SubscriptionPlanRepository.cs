@@ -32,10 +32,14 @@ internal sealed class SubscriptionPlanRepository : ISubscriptionPlanRepository
     public async Task<PagedResult<SubscriptionPlan>> GetPagedAsync(
         PagedRequest request,
         string? status,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         var query = _dbContext.SubscriptionPlans
             .Where(p => p.StatusId != (short)EntityStatusEnum.Deleted);
+
+        if (branchId.HasValue)
+            query = query.Where(p => p.BranchId == branchId.Value);
 
         if (!string.IsNullOrWhiteSpace(status) &&
             Enum.TryParse<EntityStatusEnum>(status, ignoreCase: true, out var parsed))

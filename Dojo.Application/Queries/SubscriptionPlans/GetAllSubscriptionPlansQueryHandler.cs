@@ -15,15 +15,18 @@ internal sealed class GetAllSubscriptionPlansQueryHandler : IQueryHandler<GetAll
     private readonly ISubscriptionPlanRepository _repository;
     private readonly IBranchContext              _branchContext;
     private readonly IBranchService              _branchService;
+    private readonly IUserContext                _userContext;
 
     public GetAllSubscriptionPlansQueryHandler(
         ISubscriptionPlanRepository repository,
         IBranchContext branchContext,
-        IBranchService branchService)
+        IBranchService branchService,
+        IUserContext userContext)
     {
         _repository    = repository;
         _branchContext = branchContext;
         _branchService = branchService;
+        _userContext   = userContext;
     }
 
     public async Task<Result<PagedResult<SubscriptionPlanDto>>> Handle(
@@ -32,7 +35,9 @@ internal sealed class GetAllSubscriptionPlansQueryHandler : IQueryHandler<GetAll
     {
         var branch = await _branchService.GetBranchAsync(_branchContext.BranchId, cancellationToken);
 
-        var result = await _repository.GetPagedAsync(request.Request, request.Status, cancellationToken);
+        var branchId = _userContext.IsSuperAdmin ? (Guid?)null : _branchContext.BranchId;
+
+        var result = await _repository.GetPagedAsync(request.Request, request.Status, branchId, cancellationToken);
 
         return Result.Success(PagedResult<SubscriptionPlanDto>.Create(
             result.Items.ToListDtos(branch?.Currency ?? "N/A"),

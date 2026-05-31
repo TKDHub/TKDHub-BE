@@ -1,3 +1,4 @@
+using Dojo.API.Filters;
 using Dojo.Application.Commands.SubscriptionPlans;
 using Dojo.Application.Dtos.SubscriptionPlans;
 using Dojo.Application.Models.SubscriptionPlan;
@@ -31,7 +32,9 @@ public class SubscriptionPlansController : BaseApiController
     /// Optionally filter by active/archived status using the <c>status</c> query parameter.
     /// </summary>
     [HttpGet]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(PagedResult<SubscriptionPlanDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllSubscriptionPlans(
         [FromQuery] PagedRequest request,
         [FromQuery] string? status = null,
@@ -47,7 +50,9 @@ public class SubscriptionPlansController : BaseApiController
 
     /// <summary>Returns a single subscription plan by ID.</summary>
     [HttpGet("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(SubscriptionPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubscriptionPlanById(Guid id, CancellationToken cancellationToken = default)
     {
@@ -61,9 +66,11 @@ public class SubscriptionPlansController : BaseApiController
 
     /// <summary>Creates a new subscription plan for the branch specified in the <c>X-Branch-Id</c> header.</summary>
     [HttpPost]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(SubscriptionPlanDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateSubscriptionPlan(
         [FromBody] SubscriptionPlanModel model,
@@ -87,9 +94,11 @@ public class SubscriptionPlansController : BaseApiController
 
     /// <summary>Updates an existing subscription plan.</summary>
     [HttpPut("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(SubscriptionPlanDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateSubscriptionPlan(
@@ -122,9 +131,11 @@ public class SubscriptionPlansController : BaseApiController
 
     /// <summary>Restores an archived subscription plan back to active.</summary>
     [HttpPatch("{id:guid}/restore")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RestoreSubscriptionPlan(Guid id, CancellationToken cancellationToken = default)
     {
@@ -143,9 +154,11 @@ public class SubscriptionPlansController : BaseApiController
 
     /// <summary>Archives a subscription plan (soft-disable). Plans are never hard-deleted.</summary>
     [HttpDelete("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ArchiveSubscriptionPlan(Guid id, CancellationToken cancellationToken = default)
     {

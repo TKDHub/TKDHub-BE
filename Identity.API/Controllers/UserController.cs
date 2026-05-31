@@ -1,3 +1,4 @@
+using Identity.API.Filters;
 using Identity.Application.Commands.Authentications;
 using Identity.Application.Commands.Users;
 using Identity.Application.Dtos.Users;
@@ -42,7 +43,9 @@ namespace Identity.API.Controllers
         }
 
         [HttpGet]
+        [RequireSuperAdmin]
         [ProducesResponseType(typeof(PagedResult<UserProfileDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetAllUsers([FromQuery] PagedRequest request, CancellationToken cancellationToken = default)
         {
             var result = await _sender.Send(new GetAllUsersQuery(request), cancellationToken);
@@ -54,7 +57,9 @@ namespace Identity.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
+        [RequireSuperAdmin]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetUserById(Guid id, CancellationToken cancellationToken)
         {
@@ -89,6 +94,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpPut("{id:guid}")]
+        [RequireSuperAdmin]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -121,6 +127,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpDelete("{id:guid}")]
+        [RequireSuperAdmin]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]

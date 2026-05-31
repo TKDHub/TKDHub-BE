@@ -17,6 +17,9 @@ namespace Shared.Infrastructure
             // Register branch context
             services.AddScoped<IBranchContext, BranchContext>();
 
+            // Register user context
+            services.AddScoped<IUserContext, UserContext>();
+
             return services;
         }
     }

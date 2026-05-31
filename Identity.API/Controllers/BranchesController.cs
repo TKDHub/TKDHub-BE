@@ -11,6 +11,7 @@ using Shared.Domain.Pagination;
 
 namespace Identity.API.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 public class BranchesController : BaseApiController
 {
@@ -21,9 +22,10 @@ public class BranchesController : BaseApiController
         _sender = sender;
     }
 
-    [Authorize]
     [HttpGet]
+    [RequireSuperAdmin]
     [ProducesResponseType(typeof(PagedResult<BranchDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllBranches([FromQuery] PagedRequest request, CancellationToken cancellationToken = default)
     {
         var result = await _sender.Send(new GetAllBranchesQuery(request), cancellationToken);
@@ -34,9 +36,10 @@ public class BranchesController : BaseApiController
         return Ok(result.Value);
     }
 
-    [Authorize]
     [HttpGet("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(BranchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBranchById(Guid id, CancellationToken cancellationToken)
     {
@@ -48,11 +51,12 @@ public class BranchesController : BaseApiController
         return Ok(result.Value);
     }
 
-    [RequireRestKey]
     [HttpPost]
+    [RequireSuperAdmin]
     [ProducesResponseType(typeof(BranchDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateBranch([FromBody] BranchModel model, CancellationToken cancellationToken)
     {
@@ -66,11 +70,12 @@ public class BranchesController : BaseApiController
         return CreatedAtAction(nameof(GetBranchById), new { id = result.Value.Id }, result.Value);
     }
 
-    [RequireRestKey]
     [HttpPut("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(BranchDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateBranch(Guid id, [FromBody] BranchModel model, CancellationToken cancellationToken)
@@ -93,10 +98,11 @@ public class BranchesController : BaseApiController
         return Ok(result.Value);
     }
 
-    [RequireRestKey]
     [HttpDelete("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBranch(Guid id, [FromQuery] bool deleteRecursively = false, CancellationToken cancellationToken = default)
     {

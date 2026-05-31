@@ -1,4 +1,4 @@
-using Identity.Domain.Enums;
+using Shared.Domain.Enums;
 
 namespace Identity.Domain.Entities;
 

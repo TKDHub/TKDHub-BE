@@ -1,6 +1,7 @@
 using Dojo.Application.Dtos.Students;
 using Dojo.Application.Mappings.Students;
 using Dojo.Domain.Repositories;
+using Shared.Application.Contracts;
 using Shared.Application.Messaging;
 using Shared.Domain.Pagination;
 using Shared.Domain.Primitives;
@@ -12,13 +13,24 @@ public sealed record GetAllStudentsQuery(PagedRequest Request) : IQuery<PagedRes
 internal sealed class GetAllStudentsQueryHandler : IQueryHandler<GetAllStudentsQuery, PagedResult<StudentDto>>
 {
     private readonly IStudentRepository _studentRepository;
+    private readonly IUserContext       _userContext;
+    private readonly IBranchContext     _branchContext;
 
-    public GetAllStudentsQueryHandler(IStudentRepository studentRepository)
-        => _studentRepository = studentRepository;
+    public GetAllStudentsQueryHandler(
+        IStudentRepository studentRepository,
+        IUserContext userContext,
+        IBranchContext branchContext)
+    {
+        _studentRepository = studentRepository;
+        _userContext       = userContext;
+        _branchContext     = branchContext;
+    }
 
     public async Task<Result<PagedResult<StudentDto>>> Handle(GetAllStudentsQuery request, CancellationToken cancellationToken)
     {
-        var result = await _studentRepository.GetPagedAsync(request.Request, cancellationToken);
+        var branchId = _userContext.IsSuperAdmin ? (Guid?)null : _branchContext.BranchId;
+
+        var result = await _studentRepository.GetPagedAsync(request.Request, branchId, cancellationToken);
 
         return Result.Success(PagedResult<StudentDto>.Create(
             result.Items.ToListDtos(),

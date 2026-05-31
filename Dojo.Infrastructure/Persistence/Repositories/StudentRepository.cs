@@ -30,12 +30,19 @@ internal sealed class StudentRepository : IStudentRepository
             .OrderBy(s => s.LastName).ThenBy(s => s.FirstName)
             .ToListAsync(cancellationToken);
 
-    public async Task<PagedResult<Student>> GetPagedAsync(PagedRequest request, CancellationToken cancellationToken = default)
-        => await _dbContext.Students
+    public async Task<PagedResult<Student>> GetPagedAsync(PagedRequest request, Guid? branchId = null, CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Students
             .Include(s => s.SubscriptionPlan)
-            .Where(s => s.StatusId == (short)StudentStatusEnum.Active)
+            .Where(s => s.StatusId == (short)StudentStatusEnum.Active);
+
+        if (branchId.HasValue)
+            query = query.Where(s => s.BranchId == branchId.Value);
+
+        return await query
             .OrderBy(s => s.LastName).ThenBy(s => s.FirstName)
             .ToPagedResultAsync(request, cancellationToken);
+    }
 
     public async Task<bool> ExistsByEmailAsync(string email, Guid? excludeId, CancellationToken cancellationToken = default)
         => await _dbContext.Students

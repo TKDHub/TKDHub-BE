@@ -1,3 +1,4 @@
+using Dojo.API.Filters;
 using Dojo.Application.Commands.Students;
 using Dojo.Application.Dtos.Students;
 using Dojo.Application.Models.Student;
@@ -27,7 +28,9 @@ public class StudentsController : BaseApiController
     }
 
     [HttpGet]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(PagedResult<StudentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllStudents(
         [FromQuery] PagedRequest request,
         CancellationToken cancellationToken = default)
@@ -41,7 +44,9 @@ public class StudentsController : BaseApiController
     }
 
     [HttpGet("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(StudentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetStudentById(Guid id, CancellationToken cancellationToken = default)
     {
@@ -54,9 +59,11 @@ public class StudentsController : BaseApiController
     }
 
     [HttpPost]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(StudentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateStudent(
         [FromBody] StudentModel model,
@@ -81,9 +88,11 @@ public class StudentsController : BaseApiController
     }
 
     [HttpPut("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(StudentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateStudent(
@@ -120,9 +129,11 @@ public class StudentsController : BaseApiController
     /// Returns the Cloudinary delivery URL saved on the student record.
     /// </summary>
     [HttpPost("{id:guid}/image")]
+    [RequireSuperAdminOrBranchAdmin]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UploadStudentImage(
         Guid              id,
@@ -144,8 +155,10 @@ public class StudentsController : BaseApiController
     }
 
     [HttpDelete("{id:guid}")]
+    [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteStudent(Guid id, CancellationToken cancellationToken = default)
     {

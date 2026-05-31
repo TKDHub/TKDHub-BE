@@ -5,7 +5,7 @@ using Identity.Application.Mappings.Users;
 using Identity.Application.Models.User;
 using Identity.Domain.Constants;
 using Identity.Domain.Entities;
-using Identity.Domain.Enums;
+using Shared.Domain.Enums;
 using Identity.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Messaging;

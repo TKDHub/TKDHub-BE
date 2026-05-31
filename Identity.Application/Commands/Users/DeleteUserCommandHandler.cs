@@ -1,5 +1,5 @@
 using Identity.Domain.Constants;
-using Identity.Domain.Enums;
+
 using Identity.Domain.Repositories;
 using Shared.Application.Messaging;
 using Shared.Domain.Enums;
@@ -30,7 +30,7 @@ namespace Identity.Application.Commands.Users
             if (request.RequestedByUserId != request.UserId)
             {
                 var requestingUser = await _userRepository.GetByIdAsync(request.RequestedByUserId, cancellationToken);
-                var isAdmin = requestingUser?.UserRoles.Any(r => r.RoleId == UserRoleEnum.Admin) ?? false;
+                var isAdmin = requestingUser?.UserRoles.Any(r => r.RoleId == UserRoleEnum.SuberAdmin) ?? false;
 
                 if (!isAdmin)
                     return Result.Failure<string>(UserErrors.Forbidden);
