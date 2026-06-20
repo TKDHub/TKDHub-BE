@@ -15,16 +15,16 @@ services:
   envs:
   - key: ASPNETCORE_ENVIRONMENT
     scope: RUN_AND_BUILD_TIME
-    value: Production
+    value: Development
   - key: ConnectionStrings__DojoDatabase
     scope: RUN_AND_BUILD_TIME
     type: SECRET
   - key: JwtSettings__Issuer
     scope: RUN_AND_BUILD_TIME
-    value: IdentityAPI-Prod
+    value: IdentityAPI-Dev
   - key: JwtSettings__Audience
     scope: RUN_AND_BUILD_TIME
-    value: MicroservicesUsers-Prod
+    value: MicroservicesUsers-Dev
   - key: JwtSettings__ExpiryMinutes
     scope: RUN_AND_BUILD_TIME
     value: "60"

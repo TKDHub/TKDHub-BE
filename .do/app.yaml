@@ -14,15 +14,15 @@ services:
       http_path: /health
     envs:
       - key: ASPNETCORE_ENVIRONMENT
-        value: Production
+        value: Development
       - key: ConnectionStrings__IdentityDatabase
         type: SECRET
       - key: JwtSettings__Secret
         type: SECRET
       - key: JwtSettings__Issuer
-        value: "IdentityAPI-Prod"
+        value: "IdentityAPI-Dev"
       - key: JwtSettings__Audience
-        value: "MicroservicesUsers-Prod"
+        value: "MicroservicesUsers-Dev"
       - key: JwtSettings__ExpiryMinutes
         value: "60"
       - key: RestKeySettings__Key
