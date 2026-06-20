@@ -59,7 +59,7 @@ jobs:
           token: ${{ secrets.DO_TOKEN }}
 
       - name: Deploy Identity
-        run: doctl apps create-deployment 302e2fec-8420-44cd-aab0-e6e9b98caf01 --force-rebuild
+        run: doctl apps create-deployment 32dc61a4-6db3-4576-8ec8-66543f70b922 --force-rebuild
 
       - name: Deploy Dojo
         run: doctl apps create-deployment ${{ secrets.DOJO_APP_ID }} --force-rebuild

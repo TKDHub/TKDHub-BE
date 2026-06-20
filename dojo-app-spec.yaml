@@ -19,7 +19,6 @@ services:
   - key: ConnectionStrings__DojoDatabase
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: "Host=tkdhub-db-do-user-34610403-0.d.db.ondigitalocean.com;Port=25060;Database=DojoDb;Username=doadmin;Password=AVNS_cPQAAJo88QbYqmhLbrz;SSL Mode=Require;Trust Server Certificate=true"
   - key: JwtSettings__Issuer
     scope: RUN_AND_BUILD_TIME
     value: IdentityAPI-Prod
@@ -32,24 +31,21 @@ services:
   - key: RestKeySettings__Key
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: "cf1a46ba09439dbebd58a60b27ec0442ec9942313db1d3779efe1387c58f27b3"
   - key: RestKeySettings__HeaderName
     scope: RUN_AND_BUILD_TIME
     value: X-Rest-Key
   - key: IdentityApiSettings__BaseUrl
     scope: RUN_AND_BUILD_TIME
-    value: "https://tkdhub-identity-s6dy2.ondigitalocean.app"
+    value: "https://tkdhub-identity-n3lku.ondigitalocean.app"
   - key: ErrorLogSettings__BaseUrl
     scope: RUN_AND_BUILD_TIME
-    value: "https://tkdhub-identity-s6dy2.ondigitalocean.app"
+    value: "https://tkdhub-identity-n3lku.ondigitalocean.app"
   - key: ErrorLogSettings__ServiceKey
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: "cf1a46ba09439dbebd58a60b27ec0442ec9942313db1d3779efe1387c58f27b3"
   - key: JwtSettings__Secret
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: "e0ebd3ca29d487ca54aad74109d4fe2ff1a9e3da9443e94971ba40dd0e1b77f2"
   - key: CloudinarySettings__CloudName
     scope: RUN_AND_BUILD_TIME
     value: "dlrjvaexg"
@@ -59,7 +55,6 @@ services:
   - key: CloudinarySettings__ApiSecret
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: "q1jyCWK8Js4tFpwClYDJhvMuVYY"
 ingress:
   rules:
   - component:
