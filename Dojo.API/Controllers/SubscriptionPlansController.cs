@@ -29,14 +29,15 @@ public class SubscriptionPlansController : BaseApiController
 
     /// <summary>
     /// Returns a paginated list of subscription plans for the current branch.
-    /// Optionally filter by active/archived status using the <c>status</c> query parameter.
+    /// The paging/sorting/filtering request is sent in the body; optionally filter by
+    /// active/archived status using the <c>status</c> query parameter.
     /// </summary>
-    [HttpGet]
+    [HttpPost("search")]
     [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(PagedResult<SubscriptionPlanDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllSubscriptionPlans(
-        [FromQuery] PagedRequest request,
+        [FromBody] PagedRequest request,
         [FromQuery] string? status = null,
         CancellationToken cancellationToken = default)
     {

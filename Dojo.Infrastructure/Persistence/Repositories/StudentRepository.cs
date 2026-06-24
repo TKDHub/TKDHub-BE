@@ -2,6 +2,7 @@ using Dojo.Domain.Entities;
 using Dojo.Domain.Enums;
 using Dojo.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Shared.Domain.Enums;
 using Shared.Domain.Pagination;
 using Shared.Infrastructure.Extensions;
 
@@ -54,5 +55,11 @@ internal sealed class StudentRepository : IStudentRepository
 
     public void Add(Student student)    => _dbContext.Students.Add(student);
     public void Update(Student student) => _dbContext.Students.Update(student);
-    public void Remove(Student student) => _dbContext.Students.Remove(student);
+
+    // Soft delete — rows are never physically removed (also avoids FK conflicts with invoices).
+    public void Remove(Student student)
+    {
+        student.StatusId = (short)EntityStatusEnum.Deleted;
+        _dbContext.Students.Update(student);
+    }
 }

@@ -79,9 +79,9 @@ namespace Shared.Infrastructure.Extensions
             object? typedValue;
             try
             {
-                typedValue = Convert.ChangeType(filter.Value, propertyType);
+                typedValue = ConvertValue(filter.Value, propertyType);
             }
-            catch (Exception ex) when (ex is InvalidCastException or FormatException or OverflowException)
+            catch (Exception ex) when (ex is InvalidCastException or FormatException or OverflowException or ArgumentException)
             {
                 // Value cannot be converted to property type — skip this filter
                 return query;
@@ -131,6 +131,19 @@ namespace Shared.Infrastructure.Extensions
                 Expression.Quote(lambda));
 
             return query.Provider.CreateQuery<T>(result);
+        }
+
+        // Converts the raw string filter value to the target property type.
+        // Handles Guid and enums explicitly since Convert.ChangeType does not support them.
+        private static object ConvertValue(string value, Type targetType)
+        {
+            if (targetType == typeof(Guid))
+                return Guid.Parse(value);
+
+            if (targetType.IsEnum)
+                return Enum.Parse(targetType, value, ignoreCase: true);
+
+            return Convert.ChangeType(value, targetType);
         }
 
         // Builds a string method call expression (Contains / StartsWith / EndsWith)

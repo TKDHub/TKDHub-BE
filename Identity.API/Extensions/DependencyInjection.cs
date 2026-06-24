@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Identity.Application.Commands.Authentications;
 using Identity.Application.Contracts;
@@ -20,7 +21,11 @@ namespace Identity.API.Extensions
         /// </summary>
         public static IServiceCollection AddIdentityApiServices(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddControllers();
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                    // Accept & emit enum names (e.g. "Equals", "Admin") in JSON bodies.
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
             services.AddEndpointsApiExplorer();
 
             services.AddJwtAuthentication(configuration);

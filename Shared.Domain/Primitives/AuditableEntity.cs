@@ -23,9 +23,4 @@ public abstract class AuditableEntity<Tkey> : IHasKey<Tkey>, IHasTenant
     public string? ModifiedByEmail { get; set; }
     public string? ModifiedByName { get; set; }
     public Int16 StatusId { get; set; } = (short)EntityStatusEnum.Active;
-
-    //public override int GetHashCode()
-    //{
-    //    return Id.GetHashCode() * 41;
-    //}
 }

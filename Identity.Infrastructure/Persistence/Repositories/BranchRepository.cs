@@ -47,5 +47,10 @@ internal sealed class BranchRepository : IBranchRepository
 
     public void Update(Branch branch) => _dbContext.Branches.Update(branch);
 
-    public void Remove(Branch branch) => _dbContext.Branches.Remove(branch);
+    // Soft delete — rows are never physically removed.
+    public void Remove(Branch branch)
+    {
+        branch.StatusId = (short)EntityStatusEnum.Deleted;
+        _dbContext.Branches.Update(branch);
+    }
 }

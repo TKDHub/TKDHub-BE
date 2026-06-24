@@ -42,11 +42,11 @@ namespace Identity.API.Controllers
             return Ok(result.Value);
         }
 
-        [HttpGet]
+        [HttpPost("search")]
         [RequireSuperAdmin]
         [ProducesResponseType(typeof(PagedResult<UserProfileDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> GetAllUsers([FromQuery] PagedRequest request, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetAllUsers([FromBody] PagedRequest request, CancellationToken cancellationToken = default)
         {
             var result = await _sender.Send(new GetAllUsersQuery(request), cancellationToken);
 

@@ -1,0 +1,246 @@
+{
+  "info": {
+    "name": "Dojo API - Income Invoices",
+    "description": "Income invoices & transactions (checkout).\n\nEnums are sent as NAMES (strings) in request bodies — the API has a string-enum converter.\nType: Subscription | Exam | Kit\nDiscountType: Percentage | Value\nPaymentMethod / Method: Cash | Visa | Cliq\nFilter Operator: Equals | NotEquals | GreaterThan | LessThan | GreaterThanOrEqual | LessThanOrEqual | Contains | StartsWith | EndsWith\n\nThe list endpoint is POST /api/IncomeInvoices/search with a PagedRequest body. Filter by any column (StudentId, Type, Status, ...) via the filters array — there are no dedicated type/status params.\n\nAll money figures (DiscountAmount, PriceAfterDiscount, AmountPaid, RemainingAmount) and PaymentStatus (Paid/PartiallyPaid/NotPaid) are DERIVED by the backend — you never send them.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",         "value": "http://localhost:5000" },
+    { "key": "branchId",        "value": "d2853fb4-dde8-4dd6-95ca-17c26369797a" },
+    { "key": "tenantId",        "value": "023d8fd3-fad6-4011-8d33-a8470524f5d8" },
+    { "key": "jwt",             "value": "" },
+    { "key": "studentId",       "value": "" },
+    { "key": "incomeInvoiceId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{jwt}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Search Income Invoices (all)",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices", "search"]
+        },
+        "header": [
+          { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"page\": 1,\n  \"pageSize\": 20,\n  \"sortBy\": \"CreatedOn\",\n  \"sortDescending\": true,\n  \"filters\": []\n}"
+        }
+      }
+    },
+    {
+      "name": "Search - Filter by Student",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices", "search"]
+        },
+        "header": [
+          { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"page\": 1,\n  \"pageSize\": 20,\n  \"filters\": [\n    { \"column\": \"StudentId\", \"operator\": \"Equals\", \"value\": \"{{studentId}}\" }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Search - Filter by Type & Status",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices", "search"]
+        },
+        "header": [
+          { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"page\": 1,\n  \"pageSize\": 20,\n  \"filters\": [\n    { \"column\": \"Type\", \"operator\": \"Equals\", \"value\": \"Subscription\" },\n    { \"column\": \"Status\", \"operator\": \"Equals\", \"value\": \"Open\" }\n  ]\n}"
+        },
+        "description": "Type and Status are filtered through Filters now (no dedicated params). Enum filter values are passed by NAME here (query/filter binding parses enum names), e.g. Subscription/Exam/Kit and Open/Closed."
+      }
+    },
+    {
+      "name": "Get Income Invoice By ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices/{{incomeInvoiceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices", "{{incomeInvoiceId}}"]
+        },
+        "header": [
+          { "key": "X-Branch-Id", "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
+        ]
+      }
+    },
+    {
+      "name": "Create - Paid (full amount)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('incomeInvoiceId', res.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices"]
+        },
+        "header": [
+          { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Subscription\",\n  \"originalPrice\": 50,\n  \"amountPaid\": 50,\n  \"paymentMethod\": \"Visa\"\n}"
+        },
+        "description": "Full payment now -> derived PaymentStatus=Paid, Status=Closed."
+      }
+    },
+    {
+      "name": "Create - Partially Paid",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('incomeInvoiceId', res.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices"]
+        },
+        "header": [
+          { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Subscription\",\n  \"originalPrice\": 50,\n  \"amountPaid\": 30,\n  \"paymentMethod\": \"Visa\"\n}"
+        },
+        "description": "Pays 30 of 50 -> derived PaymentStatus=PartiallyPaid, Status=Open, RemainingAmount=20."
+      }
+    },
+    {
+      "name": "Create - Not Paid",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('incomeInvoiceId', res.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices"]
+        },
+        "header": [
+          { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Subscription\",\n  \"originalPrice\": 50\n}"
+        },
+        "description": "No amount collected -> derived PaymentStatus=NotPaid, Status=Open, RemainingAmount=50. No transaction created."
+      }
+    },
+    {
+      "name": "Create - Percentage Discount + Partial",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('incomeInvoiceId', res.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices"]
+        },
+        "header": [
+          { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Subscription\",\n  \"originalPrice\": 50,\n  \"discountType\": \"Percentage\",\n  \"discountValue\": 10,\n  \"amountPaid\": 20,\n  \"paymentMethod\": \"Cash\"\n}"
+        },
+        "description": "Percentage discount of 10 -> BE computes DiscountAmount=5, PriceAfterDiscount=45. Pays 20 (Cash) -> PartiallyPaid, Remaining=25."
+      }
+    },
+    {
+      "name": "Add Transaction (subsequent payment)",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/IncomeInvoices/{{incomeInvoiceId}}/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "IncomeInvoices", "{{incomeInvoiceId}}", "transactions"]
+        },
+        "header": [
+          { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+          { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 20,\n  \"method\": \"Cliq\"\n}"
+        },
+        "description": "Records a further payment on an OPEN invoice. Auto-closes the invoice once RemainingAmount hits 0. Rejects amounts above the remaining balance."
+      }
+    }
+  ]
+}

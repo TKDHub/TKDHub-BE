@@ -27,12 +27,12 @@ public class StudentsController : BaseApiController
         _tenantContext = tenantContext;
     }
 
-    [HttpGet]
+    [HttpPost("search")]
     [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(PagedResult<StudentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllStudents(
-        [FromQuery] PagedRequest request,
+        [FromBody] PagedRequest request,
         CancellationToken cancellationToken = default)
     {
         var result = await _sender.Send(new GetAllStudentsQuery(request), cancellationToken);

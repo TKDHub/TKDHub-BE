@@ -22,11 +22,11 @@ public class BranchesController : BaseApiController
         _sender = sender;
     }
 
-    [HttpGet]
+    [HttpPost("search")]
     [RequireSuperAdmin]
     [ProducesResponseType(typeof(PagedResult<BranchDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetAllBranches([FromQuery] PagedRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetAllBranches([FromBody] PagedRequest request, CancellationToken cancellationToken = default)
     {
         var result = await _sender.Send(new GetAllBranchesQuery(request), cancellationToken);
 

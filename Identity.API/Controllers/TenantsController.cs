@@ -21,9 +21,9 @@ namespace Identity.API.Controllers
         }
 
         [Authorize]
-        [HttpGet]
+        [HttpPost("search")]
         [ProducesResponseType(typeof(PagedResult<object>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllTenants([FromQuery] PagedRequest request, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetAllTenants([FromBody] PagedRequest request, CancellationToken cancellationToken = default)
         {
             var result = await _sender.Send(new GetAllTenantsQuery(request), cancellationToken);
 

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Dojo.Application.Commands.Students;
 using Dojo.Infrastructure;
 using Dojo.Infrastructure.Persistence;
@@ -14,7 +15,11 @@ namespace Dojo.API.Extensions
         /// </summary>
         public static IServiceCollection AddDojoApiServices(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddControllers();
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                    // Accept & emit enum names (e.g. "Subscription", "Visa", "Equals") in JSON bodies.
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
             services.AddEndpointsApiExplorer();
 
             services.AddJwtAuthentication(configuration);

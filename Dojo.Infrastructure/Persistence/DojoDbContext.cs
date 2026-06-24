@@ -13,8 +13,10 @@ public sealed class DojoDbContext : BaseDbContext
     {
     }
 
-    public DbSet<Student>           Students          { get; set; }
-    public DbSet<SubscriptionPlan>  SubscriptionPlans { get; set; }
+    public DbSet<Student>            Students            { get; set; }
+    public DbSet<SubscriptionPlan>   SubscriptionPlans   { get; set; }
+    public DbSet<IncomeInvoice>      IncomeInvoices      { get; set; }
+    public DbSet<IncomeTransaction>  IncomeTransactions  { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

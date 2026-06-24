@@ -1,15 +1,17 @@
 {
   "info": {
     "name": "Dojo API",
+    "description": "Dojo microservice — Subscription Plans, Students, and Income Invoices.\n\nConventions:\n- Auth: Bearer {{jwt}} (get the token from the Identity API login). Most write endpoints require SuperAdmin or a branch Admin.\n- Headers: X-Branch-Id selects the branch (SuperAdmin omits it to span all branches); X-Tenant-Id is the tenant.\n- List endpoints are POST {resource}/search with a PagedRequest body: { page, pageSize, sortBy?, sortDescending?, filters:[{column,operator,value}] }. Filter operators: Equals, NotEquals, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual, Contains, StartsWith, EndsWith.\n- Enums are sent by NAME (string) in bodies. Gender: Male|Female|Other. BeltLevel: White|Yellow|GreenI..BlackIV. InvoiceType: Subscription|Exam|Kit. DiscountType: Percentage|Value. PaymentMethod: Cash|Visa|Cliq.\n- Income invoices: DiscountAmount, PriceAfterDiscount, AmountPaid, RemainingAmount and PaymentStatus are DERIVED by the backend. Status (Open/Closed) flips automatically.\n- Deletes are soft (rows are marked Deleted, never physically removed).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl",   "value": "http://localhost:5000" },
-    { "key": "branchId",  "value": "d2853fb4-dde8-4dd6-95ca-17c26369797a" },
-    { "key": "tenantId",  "value": "023d8fd3-fad6-4011-8d33-a8470524f5d8" },
-    { "key": "jwt",       "value": "" },
-    { "key": "planId",    "value": "" },
-    { "key": "studentId", "value": "" }
+    { "key": "baseUrl",         "value": "http://localhost:5000" },
+    { "key": "branchId",        "value": "d2853fb4-dde8-4dd6-95ca-17c26369797a" },
+    { "key": "tenantId",        "value": "023d8fd3-fad6-4011-8d33-a8470524f5d8" },
+    { "key": "jwt",             "value": "" },
+    { "key": "planId",          "value": "" },
+    { "key": "studentId",       "value": "" },
+    { "key": "incomeInvoiceId", "value": "" }
   ],
   "auth": {
     "type": "bearer",
@@ -20,43 +22,44 @@
       "name": "Subscription Plans",
       "item": [
         {
-          "name": "Get All Plans",
+          "name": "Search Plans",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "url": {
-              "raw": "{{baseUrl}}/api/subscriptionplans?pageNumber=1&pageSize=10",
+              "raw": "{{baseUrl}}/api/subscriptionplans/search",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "subscriptionplans"],
-              "query": [
-                { "key": "pageNumber", "value": "1" },
-                { "key": "pageSize",   "value": "10" },
-                { "key": "status",     "value": "Active", "disabled": true }
-              ]
+              "path": ["api", "subscriptionplans", "search"]
             },
             "header": [
-              { "key": "X-Branch-Id", "value": "{{branchId}}" },
-              { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
-            ]
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"pageSize\": 10,\n  \"sortBy\": \"Name\",\n  \"sortDescending\": false,\n  \"filters\": []\n}"
+            }
           }
         },
         {
-          "name": "Get All Plans (Inactive)",
+          "name": "Search Plans (Inactive)",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "url": {
-              "raw": "{{baseUrl}}/api/subscriptionplans?pageNumber=1&pageSize=10&status=Inactive",
+              "raw": "{{baseUrl}}/api/subscriptionplans/search?status=Inactive",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "subscriptionplans"],
-              "query": [
-                { "key": "pageNumber", "value": "1" },
-                { "key": "pageSize",   "value": "10" },
-                { "key": "status",     "value": "Inactive" }
-              ]
+              "path": ["api", "subscriptionplans", "search"],
+              "query": [{ "key": "status", "value": "Inactive" }]
             },
             "header": [
-              { "key": "X-Branch-Id", "value": "{{branchId}}" },
-              { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
-            ]
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"pageSize\": 10,\n  \"filters\": []\n}"
+            }
           }
         },
         {
@@ -77,15 +80,10 @@
         {
           "name": "Create Plan",
           "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var res = pm.response.json();",
-                  "if (res.id) pm.collectionVariables.set('planId', res.id);"
-                ]
-              }
-            }
+            { "listen": "test", "script": { "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('planId', res.id);"
+            ] } }
           ],
           "request": {
             "method": "POST",
@@ -95,9 +93,9 @@
               "path": ["api", "subscriptionplans"]
             },
             "header": [
-              { "key": "X-Branch-Id",   "value": "{{branchId}}" },
-              { "key": "X-Tenant-Id",   "value": "{{tenantId}}" },
-              { "key": "Content-Type",  "value": "application/json" }
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -115,14 +113,30 @@
               "path": ["api", "subscriptionplans", "{{planId}}"]
             },
             "header": [
-              { "key": "X-Branch-Id",   "value": "{{branchId}}" },
-              { "key": "X-Tenant-Id",   "value": "{{tenantId}}" },
-              { "key": "Content-Type",  "value": "application/json" }
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Monthly Plan\",\n  \"description\": \"Updated description\",\n  \"durationMonths\": 1,\n  \"price\": 59.99\n}"
             }
+          }
+        },
+        {
+          "name": "Restore Plan",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptionplans/{{planId}}/restore",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptionplans", "{{planId}}", "restore"]
+            },
+            "header": [
+              { "key": "X-Branch-Id", "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
+            ],
+            "description": "Restores an archived plan back to Active. Returns 204."
           }
         },
         {
@@ -137,7 +151,8 @@
             "header": [
               { "key": "X-Branch-Id", "value": "{{branchId}}" },
               { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
-            ]
+            ],
+            "description": "Soft-archives the plan (status -> Inactive/Deleted). Returns 204. Never hard-deleted."
           }
         }
       ]
@@ -146,22 +161,43 @@
       "name": "Students",
       "item": [
         {
-          "name": "Get All Students",
+          "name": "Search Students",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "url": {
-              "raw": "{{baseUrl}}/api/students?pageNumber=1&pageSize=10",
+              "raw": "{{baseUrl}}/api/students/search",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "students"],
-              "query": [
-                { "key": "pageNumber", "value": "1" },
-                { "key": "pageSize",   "value": "10" }
-              ]
+              "path": ["api", "students", "search"]
             },
             "header": [
-              { "key": "X-Branch-Id", "value": "{{branchId}}" },
-              { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
-            ]
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"pageSize\": 10,\n  \"sortBy\": \"LastName\",\n  \"sortDescending\": false,\n  \"filters\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Search Students (filter by SubscriptionPlan)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/students/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "students", "search"]
+            },
+            "header": [
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"pageSize\": 10,\n  \"filters\": [\n    { \"column\": \"SubscriptionPlanId\", \"operator\": \"Equals\", \"value\": \"{{planId}}\" }\n  ]\n}"
+            }
           }
         },
         {
@@ -182,15 +218,10 @@
         {
           "name": "Create Student",
           "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var res = pm.response.json();",
-                  "if (res.id) pm.collectionVariables.set('studentId', res.id);"
-                ]
-              }
-            }
+            { "listen": "test", "script": { "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('studentId', res.id);"
+            ] } }
           ],
           "request": {
             "method": "POST",
@@ -200,13 +231,13 @@
               "path": ["api", "students"]
             },
             "header": [
-              { "key": "X-Branch-Id",   "value": "{{branchId}}" },
-              { "key": "X-Tenant-Id",   "value": "{{tenantId}}" },
-              { "key": "Content-Type",  "value": "application/json" }
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Hassan\",\n  \"email\": \"ali.hassan@test.com\",\n  \"phoneNumber\": \"+962791234567\",\n  \"dateOfBirth\": \"2005-03-15\",\n  \"gender\": \"Male\",\n  \"startDate\": \"2026-01-01\",\n  \"beltLevel\": \"White\",\n  \"subscriptionPlanId\": \"{{planId}}\",\n  \"emergencyContact\": \"Father: +962799999999\",\n  \"profileImage\": \"https://cdn.example.com/students/ali-hassan.jpg\"\n}"
+              "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Hassan\",\n  \"email\": \"ali.hassan@test.com\",\n  \"phoneNumber\": \"+962791234567\",\n  \"dateOfBirth\": \"2005-03-15\",\n  \"gender\": \"Male\",\n  \"startDate\": \"2026-01-01\",\n  \"beltLevel\": \"White\",\n  \"subscriptionPlanId\": \"{{planId}}\",\n  \"price\": 49.99,\n  \"currency\": \"USD\",\n  \"durationMonths\": 1,\n  \"emergencyContact\": \"Father: +962799999999\",\n  \"profileImageUrl\": \"https://cdn.example.com/students/ali-hassan.jpg\"\n}"
             }
           }
         },
@@ -220,18 +251,40 @@
               "path": ["api", "students", "{{studentId}}"]
             },
             "header": [
-              { "key": "X-Branch-Id",   "value": "{{branchId}}" },
-              { "key": "X-Tenant-Id",   "value": "{{tenantId}}" },
-              { "key": "Content-Type",  "value": "application/json" }
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Hassan\",\n  \"email\": \"ali.hassan@test.com\",\n  \"phoneNumber\": \"+962791234567\",\n  \"dateOfBirth\": \"2005-03-15\",\n  \"gender\": \"Male\",\n  \"startDate\": \"2026-01-01\",\n  \"beltLevel\": \"Yellow\",\n  \"subscriptionPlanId\": \"{{planId}}\",\n  \"emergencyContact\": \"Father: +962799999999\",\n  \"profileImage\": \"https://cdn.example.com/students/ali.jpg\"\n}"
+              "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Hassan\",\n  \"email\": \"ali.hassan@test.com\",\n  \"phoneNumber\": \"+962791234567\",\n  \"dateOfBirth\": \"2005-03-15\",\n  \"gender\": \"Male\",\n  \"startDate\": \"2026-01-01\",\n  \"beltLevel\": \"Yellow\",\n  \"subscriptionPlanId\": \"{{planId}}\",\n  \"price\": 49.99,\n  \"currency\": \"USD\",\n  \"durationMonths\": 1,\n  \"emergencyContact\": \"Father: +962799999999\",\n  \"profileImageUrl\": \"https://cdn.example.com/students/ali.jpg\"\n}"
             }
           }
         },
         {
-          "name": "Delete Student",
+          "name": "Upload Student Image",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/students/{{studentId}}/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "students", "{{studentId}}", "image"]
+            },
+            "header": [
+              { "key": "X-Branch-Id", "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file", "src": [] }
+              ]
+            },
+            "description": "Multipart upload. Pick a file for the 'image' field (JPEG/PNG/WebP, max 10 MB). Do not set Content-Type manually — Postman adds the multipart boundary. Returns { url }."
+          }
+        },
+        {
+          "name": "Delete Student (soft)",
           "request": {
             "method": "DELETE",
             "url": {
@@ -242,7 +295,198 @@
             "header": [
               { "key": "X-Branch-Id", "value": "{{branchId}}" },
               { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
+            ],
+            "description": "Soft delete (status -> Deleted). Returns 204. The row is preserved; it just drops out of active lists."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Income Invoices",
+      "item": [
+        {
+          "name": "Search Invoices",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/IncomeInvoices/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "IncomeInvoices", "search"]
+            },
+            "header": [
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"pageSize\": 20,\n  \"sortBy\": \"CreatedOn\",\n  \"sortDescending\": true,\n  \"filters\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Search Invoices (by Student)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/IncomeInvoices/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "IncomeInvoices", "search"]
+            },
+            "header": [
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"pageSize\": 20,\n  \"filters\": [\n    { \"column\": \"StudentId\", \"operator\": \"Equals\", \"value\": \"{{studentId}}\" },\n    { \"column\": \"Status\", \"operator\": \"Equals\", \"value\": \"Open\" }\n  ]\n}"
+            },
+            "description": "Filter by any column via the filters array — there are no dedicated query params. Status: Open|Closed. Type: Subscription|Exam|Kit."
+          }
+        },
+        {
+          "name": "Get Invoice By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/IncomeInvoices/{{incomeInvoiceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "IncomeInvoices", "{{incomeInvoiceId}}"]
+            },
+            "header": [
+              { "key": "X-Branch-Id", "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" }
             ]
+          }
+        },
+        {
+          "name": "Create Invoice - Paid (full)",
+          "event": [
+            { "listen": "test", "script": { "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('incomeInvoiceId', res.id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/IncomeInvoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "IncomeInvoices"]
+            },
+            "header": [
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Subscription\",\n  \"originalPrice\": 50,\n  \"amountPaid\": 50,\n  \"paymentMethod\": \"Visa\"\n}"
+            },
+            "description": "Full payment -> derived PaymentStatus=Paid, Status=Closed."
+          }
+        },
+        {
+          "name": "Create Invoice - Partially Paid",
+          "event": [
+            { "listen": "test", "script": { "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('incomeInvoiceId', res.id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/IncomeInvoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "IncomeInvoices"]
+            },
+            "header": [
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Subscription\",\n  \"originalPrice\": 50,\n  \"amountPaid\": 30,\n  \"paymentMethod\": \"Cash\"\n}"
+            },
+            "description": "Pays 30 of 50 -> PartiallyPaid, Status=Open, RemainingAmount=20."
+          }
+        },
+        {
+          "name": "Create Invoice - Not Paid",
+          "event": [
+            { "listen": "test", "script": { "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('incomeInvoiceId', res.id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/IncomeInvoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "IncomeInvoices"]
+            },
+            "header": [
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Subscription\",\n  \"originalPrice\": 50\n}"
+            },
+            "description": "No amount collected -> NotPaid, Status=Open, RemainingAmount=50. No transaction created."
+          }
+        },
+        {
+          "name": "Create Invoice - Percentage Discount + Partial",
+          "event": [
+            { "listen": "test", "script": { "exec": [
+              "var res = pm.response.json();",
+              "if (res.id) pm.collectionVariables.set('incomeInvoiceId', res.id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/IncomeInvoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "IncomeInvoices"]
+            },
+            "header": [
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Subscription\",\n  \"originalPrice\": 50,\n  \"discountType\": \"Percentage\",\n  \"discountValue\": 10,\n  \"amountPaid\": 20,\n  \"paymentMethod\": \"Cliq\"\n}"
+            },
+            "description": "10% discount -> DiscountAmount=5, PriceAfterDiscount=45. Pays 20 -> PartiallyPaid, Remaining=25. Use DiscountType 'Value' to give a flat-amount discount instead."
+          }
+        },
+        {
+          "name": "Add Transaction",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/IncomeInvoices/{{incomeInvoiceId}}/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "IncomeInvoices", "{{incomeInvoiceId}}", "transactions"]
+            },
+            "header": [
+              { "key": "X-Branch-Id",  "value": "{{branchId}}" },
+              { "key": "X-Tenant-Id",  "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 20,\n  \"method\": \"Cliq\"\n}"
+            },
+            "description": "Records a further payment on an OPEN invoice. Auto-closes it once the balance reaches 0. Rejects amounts above the remaining balance, and any payment on a closed invoice."
           }
         }
       ]

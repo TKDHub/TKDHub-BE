@@ -114,8 +114,10 @@ internal sealed class UserRepository : IUserRepository
         _dbContext.Users.Update(user);
     }
 
+    // Soft delete — rows are never physically removed.
     public void Remove(User user)
     {
-        _dbContext.Users.Remove(user);
+        user.StatusId = (short)EntityStatusEnum.Deleted;
+        _dbContext.Users.Update(user);
     }
 }
