@@ -8,7 +8,7 @@ using Shared.Domain.Primitives;
 
 namespace Dojo.Application.Queries.SubscriptionPlans;
 
-public sealed record GetAllSubscriptionPlansQuery(PagedRequest Request, string? Status) : IQuery<PagedResult<SubscriptionPlanDto>>;
+public sealed record GetAllSubscriptionPlansQuery(PagedRequest Request) : IQuery<PagedResult<SubscriptionPlanDto>>;
 
 internal sealed class GetAllSubscriptionPlansQueryHandler : IQueryHandler<GetAllSubscriptionPlansQuery, PagedResult<SubscriptionPlanDto>>
 {
@@ -37,7 +37,7 @@ internal sealed class GetAllSubscriptionPlansQueryHandler : IQueryHandler<GetAll
 
         var branchId = _userContext.IsSuperAdmin ? (Guid?)null : _branchContext.BranchId;
 
-        var result = await _repository.GetPagedAsync(request.Request, request.Status, branchId, cancellationToken);
+        var result = await _repository.GetPagedAsync(request.Request, branchId, cancellationToken);
 
         return Result.Success(PagedResult<SubscriptionPlanDto>.Create(
             result.Items.ToListDtos(branch?.Currency ?? "N/A"),

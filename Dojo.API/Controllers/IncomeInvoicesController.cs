@@ -13,15 +13,8 @@ namespace Dojo.API.Controllers;
 
 [Authorize]
 [Route("api/[controller]")]
-public class IncomeInvoicesController : BaseApiController
+public class IncomeInvoicesController(ISender sender) : BaseApiController
 {
-    private readonly ISender _sender;
-
-    public IncomeInvoicesController(ISender sender)
-    {
-        _sender = sender;
-    }
-
     /// <summary>
     /// Returns a paginated list of income invoices. SuperAdmin sees all branches;
     /// branch Admins see only their own branch. The paging/sorting/filtering request
@@ -36,7 +29,7 @@ public class IncomeInvoicesController : BaseApiController
         [FromBody] PagedRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new GetAllIncomeInvoicesQuery(request), cancellationToken);
+        var result = await sender.Send(new GetAllIncomeInvoicesQuery(request), cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error.Description });
@@ -52,7 +45,7 @@ public class IncomeInvoicesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetIncomeInvoiceById(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new GetIncomeInvoiceByIdQuery(id), cancellationToken);
+        var result = await sender.Send(new GetIncomeInvoiceByIdQuery(id), cancellationToken);
 
         if (result.IsFailure)
             return NotFound(new { error = result.Error.Description });
@@ -82,10 +75,10 @@ public class IncomeInvoicesController : BaseApiController
             CreatedByName  = GetUserNameFromClaims()
         };
 
-        var result = await _sender.Send(new CreateIncomeInvoiceCommand(model), cancellationToken);
+        var result = await sender.Send(new CreateIncomeInvoiceCommand(model), cancellationToken);
 
         if (result.IsFailure)
-            return result.Error == IncomeInvoiceErrors.StudentNotFound
+            return result.Error == IncomeInvoiceErrors.StudentNotFound || result.Error == IncomeInvoiceErrors.BranchNotFound
                 ? NotFound(new { error = result.Error.Description })
                 : BadRequest(new { error = result.Error.Description });
 
@@ -115,10 +108,78 @@ public class IncomeInvoicesController : BaseApiController
             CreatedByName   = GetUserNameFromClaims()
         };
 
-        var result = await _sender.Send(new AddIncomeTransactionCommand(model), cancellationToken);
+        var result = await sender.Send(new AddIncomeTransactionCommand(model), cancellationToken);
 
         if (result.IsFailure)
             return result.Error == IncomeInvoiceErrors.NotFound
+                ? NotFound(new { error = result.Error.Description })
+                : BadRequest(new { error = result.Error.Description });
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Voids an invoice. Every Paid transaction still holding an unrefunded balance
+    /// gets a matching Refund transaction for that remaining amount — the original
+    /// Paid transactions are never modified. The invoice itself is never chased for
+    /// payment again once voided.
+    /// </summary>
+    [HttpPost("{id:guid}/void")]
+    [RequireSuperAdminOrBranchAdmin]
+    [ProducesResponseType(typeof(IncomeInvoiceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> VoidIncomeInvoice(
+        Guid id,
+        [FromBody] VoidIncomeInvoiceModel model,
+        CancellationToken cancellationToken = default)
+    {
+        model = model with
+        {
+            InvoiceId     = id,
+            VoidedByEmail = GetUserEmailFromClaims(),
+            VoidedByName  = GetUserNameFromClaims()
+        };
+
+        var result = await sender.Send(new VoidIncomeInvoiceCommand(model), cancellationToken);
+
+        if (result.IsFailure)
+            return result.Error == IncomeInvoiceErrors.NotFound
+                ? NotFound(new { error = result.Error.Description })
+                : BadRequest(new { error = result.Error.Description });
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Refunds part or all of a single Paid transaction. InvoiceId and TransactionId
+    /// are supplied in the body. Creates a new Refund transaction rather than mutating
+    /// the original, and can reopen an invoice that was previously Closed if the
+    /// refunded amount leaves a balance due again.
+    /// </summary>
+    [HttpPost("transactions/refund")]
+    [RequireSuperAdminOrBranchAdmin]
+    [ProducesResponseType(typeof(IncomeInvoiceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RefundIncomeTransaction(
+        [FromBody] RefundIncomeTransactionModel model,
+        CancellationToken cancellationToken = default)
+    {
+        model = model with
+        {
+            RefundedByEmail = GetUserEmailFromClaims(),
+            RefundedByName  = GetUserNameFromClaims()
+        };
+
+        var result = await sender.Send(new RefundIncomeTransactionCommand(model), cancellationToken);
+
+        if (result.IsFailure)
+            return result.Error == IncomeInvoiceErrors.NotFound || result.Error == IncomeInvoiceErrors.TransactionNotFound
                 ? NotFound(new { error = result.Error.Description })
                 : BadRequest(new { error = result.Error.Description });
 

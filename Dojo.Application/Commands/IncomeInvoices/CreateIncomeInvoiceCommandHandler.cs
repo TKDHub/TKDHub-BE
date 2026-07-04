@@ -2,9 +2,9 @@ using Dojo.Application.Dtos.IncomeInvoices;
 using Dojo.Application.Mappings.IncomeInvoices;
 using Dojo.Application.Models.IncomeInvoice;
 using Dojo.Domain.Constants;
-using Dojo.Domain.Entities;
 using Dojo.Domain.Enums;
 using Dojo.Domain.Repositories;
+using Shared.Application.Contracts;
 using Shared.Application.Messaging;
 using Shared.Domain.Primitives;
 
@@ -16,15 +16,18 @@ internal sealed class CreateIncomeInvoiceCommandHandler : ICommandHandler<Create
 {
     private readonly IIncomeInvoiceRepository _invoiceRepository;
     private readonly IStudentRepository       _studentRepository;
+    private readonly IBranchService           _branchService;
     private readonly IUnitOfWork              _unitOfWork;
 
     public CreateIncomeInvoiceCommandHandler(
         IIncomeInvoiceRepository invoiceRepository,
         IStudentRepository studentRepository,
+        IBranchService branchService,
         IUnitOfWork unitOfWork)
     {
         _invoiceRepository = invoiceRepository;
         _studentRepository = studentRepository;
+        _branchService     = branchService;
         _unitOfWork        = unitOfWork;
     }
 
@@ -49,7 +52,12 @@ internal sealed class CreateIncomeInvoiceCommandHandler : ICommandHandler<Create
         if (student is null)
             return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.StudentNotFound);
 
-        var invoice = model.ToEntity(student);
+        // Currency reflects the branch's current setting, not a possibly-stale student snapshot.
+        var branch = await _branchService.GetBranchAsync(student.BranchId, cancellationToken);
+        if (branch is null)
+            return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.BranchNotFound);
+
+        var invoice = model.ToEntity(student, branch.Currency ?? "N/A");
 
         // Record the first transaction (if any money was collected). Everything else —
         // payment status and Open/Closed — is derived from the amount against the total.

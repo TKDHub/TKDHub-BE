@@ -17,6 +17,7 @@ public sealed class DojoDbContext : BaseDbContext
     public DbSet<SubscriptionPlan>   SubscriptionPlans   { get; set; }
     public DbSet<IncomeInvoice>      IncomeInvoices      { get; set; }
     public DbSet<IncomeTransaction>  IncomeTransactions  { get; set; }
+    public DbSet<OutcomeInvoice>     OutcomeInvoices     { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

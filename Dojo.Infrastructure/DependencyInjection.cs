@@ -24,6 +24,7 @@ namespace Dojo.Infrastructure
             services.AddScoped<IStudentRepository, StudentRepository>();
             services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
             services.AddScoped<IIncomeInvoiceRepository, IncomeInvoiceRepository>();
+            services.AddScoped<IOutcomeInvoiceRepository, OutcomeInvoiceRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork<DojoDbContext>>();
 
             // Identity service clients

@@ -41,6 +41,25 @@ internal sealed class IncomeInvoiceRepository : IIncomeInvoiceRepository
             .ToPagedResultAsync(request, cancellationToken);
     }
 
+    public async Task<decimal> GetTotalNetPaidAsync(
+        PagedRequest request,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.IncomeInvoices
+            .Where(i => i.StatusId != (short)EntityStatusEnum.Deleted);
+
+        if (branchId.HasValue)
+            query = query.Where(i => i.BranchId == branchId.Value);
+
+        foreach (var filter in request.Filters)
+            query = query.ApplyFilter(filter);
+
+        return await query
+            .SelectMany(i => i.Transactions)
+            .SumAsync(t => t.Status == IncomeTransactionStatusEnum.Refund ? -t.Amount : t.Amount, cancellationToken);
+    }
+
     public void Add(IncomeInvoice invoice)    => _dbContext.IncomeInvoices.Add(invoice);
     public void Update(IncomeInvoice invoice) => _dbContext.IncomeInvoices.Update(invoice);
     public void AddTransaction(IncomeTransaction transaction) => _dbContext.IncomeTransactions.Add(transaction);

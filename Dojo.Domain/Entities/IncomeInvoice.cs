@@ -24,6 +24,12 @@ public sealed class IncomeInvoice : AuditableEntity<Guid>, IHasBranch
 
     public IncomeInvoiceStatusEnum Status { get; set; } = IncomeInvoiceStatusEnum.Open;
 
+    // ── Void audit (set only when Status == Voided) ──────────────
+    public DateTimeOffset? VoidedOn      { get; set; }
+    public string?         VoidedByEmail { get; set; }
+    public string?         VoidedByName  { get; set; }
+    public string?         VoidReason    { get; set; }
+
     // ── Relations ────────────────────────────────────────────────
     public Student                        Student      { get; set; } = null!;
     public ICollection<IncomeTransaction> Transactions { get; set; } = [];
@@ -38,13 +44,26 @@ public sealed class IncomeInvoice : AuditableEntity<Guid>, IHasBranch
 
     public decimal PriceAfterDiscount => Math.Max(OriginalPrice - DiscountAmount, 0m);
 
-    public decimal AmountPaid => Transactions?.Sum(t => t.Amount) ?? 0m;
+    /// <summary>Net collected: Paid transactions minus Refund transactions.</summary>
+    public decimal AmountPaid => Transactions is null
+        ? 0m
+        : Transactions.Sum(t => t.Status == IncomeTransactionStatusEnum.Refund ? -t.Amount : t.Amount);
 
-    public decimal RemainingAmount => Math.Max(PriceAfterDiscount - AmountPaid, 0m);
+    /// <summary>
+    /// Amount still owed. Forced to zero once voided — a voided invoice is cancelled
+    /// and is never chased for payment, regardless of the net amounts underneath it.
+    /// </summary>
+    public decimal RemainingAmount => Status == IncomeInvoiceStatusEnum.Voided
+        ? 0m
+        : Math.Max(PriceAfterDiscount - AmountPaid, 0m);
 
-    /// <summary>Derived from how much has been collected — never declared by the client.</summary>
+    /// <summary>
+    /// Derived from how much has been collected — never declared by the client.
+    /// Computed straight from AmountPaid vs PriceAfterDiscount (not RemainingAmount),
+    /// so it stays meaningful even for a voided invoice (e.g. NotPaid once refunded).
+    /// </summary>
     public PaymentStatusEnum PaymentStatus =>
-        RemainingAmount <= 0 ? PaymentStatusEnum.Paid
-        : AmountPaid    <= 0 ? PaymentStatusEnum.NotPaid
+        AmountPaid <= 0                    ? PaymentStatusEnum.NotPaid
+        : AmountPaid >= PriceAfterDiscount ? PaymentStatusEnum.Paid
         : PaymentStatusEnum.PartiallyPaid;
 }

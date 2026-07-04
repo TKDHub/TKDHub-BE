@@ -23,7 +23,7 @@ public sealed class RequireSuperAdminAttribute : Attribute, IAsyncActionFilter
 
         var roleClaims = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToHashSet();
 
-        if (!roleClaims.Contains(nameof(UserRoleEnum.SuberAdmin)))
+        if (!roleClaims.Contains(((short)UserRoleEnum.SuberAdmin).ToString()))
         {
             context.Result = new ForbidResult();
             return;

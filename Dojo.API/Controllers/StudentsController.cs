@@ -14,19 +14,8 @@ namespace Dojo.API.Controllers;
 
 [Authorize]
 [Route("api/[controller]")]
-public class StudentsController : BaseApiController
+public class StudentsController(ISender sender, IBranchContext branchContext, ITenantContext tenantContext) : BaseApiController
 {
-    private readonly ISender        _sender;
-    private readonly IBranchContext _branchContext;
-    private readonly ITenantContext _tenantContext;
-
-    public StudentsController(ISender sender, IBranchContext branchContext, ITenantContext tenantContext)
-    {
-        _sender        = sender;
-        _branchContext = branchContext;
-        _tenantContext = tenantContext;
-    }
-
     [HttpPost("search")]
     [RequireSuperAdminOrBranchAdmin]
     [ProducesResponseType(typeof(PagedResult<StudentDto>), StatusCodes.Status200OK)]
@@ -35,7 +24,7 @@ public class StudentsController : BaseApiController
         [FromBody] PagedRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new GetAllStudentsQuery(request), cancellationToken);
+        var result = await sender.Send(new GetAllStudentsQuery(request), cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error.Description });
@@ -50,7 +39,7 @@ public class StudentsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetStudentById(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new GetStudentByIdQuery(id), cancellationToken);
+        var result = await sender.Send(new GetStudentByIdQuery(id), cancellationToken);
 
         if (result.IsFailure)
             return NotFound(new { error = result.Error.Description });
@@ -75,8 +64,8 @@ public class StudentsController : BaseApiController
             CreatedByName  = GetUserNameFromClaims()
         };
 
-        var result = await _sender.Send(
-            new CreateStudentCommand(model, _branchContext.BranchId, _tenantContext.TenantId),
+        var result = await sender.Send(
+            new CreateStudentCommand(model, branchContext.BranchId, tenantContext.TenantId),
             cancellationToken);
 
         if (result.IsFailure)
@@ -107,7 +96,7 @@ public class StudentsController : BaseApiController
             ModifiedByName  = GetUserNameFromClaims()
         };
 
-        var result = await _sender.Send(new UpdateStudentCommand(model), cancellationToken);
+        var result = await sender.Send(new UpdateStudentCommand(model), cancellationToken);
 
         if (result.IsFailure)
         {
@@ -142,7 +131,7 @@ public class StudentsController : BaseApiController
     {
         await using var stream = image.OpenReadStream();
 
-        var result = await _sender.Send(
+        var result = await sender.Send(
             new UploadStudentImageCommand(id, stream, image.FileName, image.ContentType, image.Length),
             cancellationToken);
 
@@ -162,7 +151,7 @@ public class StudentsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteStudent(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new DeleteStudentCommand(id), cancellationToken);
+        var result = await sender.Send(new DeleteStudentCommand(id), cancellationToken);
 
         if (result.IsFailure)
             return result.Error == StudentErrors.NotFound

@@ -11,15 +11,8 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Identity.API.Controllers
 {
     [Route("api/[controller]")]
-    public class AuthenticationController : BaseApiController
+    public class AuthenticationController(ISender sender) : BaseApiController
     {
-        private readonly ISender _sender;
-
-        public AuthenticationController(ISender sender)
-        {
-            _sender = sender;
-        }
-
         [RequireRestKey]
         [HttpPost("register")]
         [EnableRateLimiting("AuthPolicy")]
@@ -31,7 +24,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> Register([FromBody] RegisterUserModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new RegisterCommand(model), cancellationToken);
+            var result = await sender.Send(new RegisterCommand(model), cancellationToken);
 
             if (result.IsFailure)
             {
@@ -56,7 +49,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> Login([FromBody] AuthModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new LoginCommand(model), cancellationToken);
+            var result = await sender.Send(new LoginCommand(model), cancellationToken);
 
             if (result.IsFailure)
             {
@@ -77,7 +70,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new RefreshTokenCommand(model), cancellationToken);
+            var result = await sender.Send(new RefreshTokenCommand(model), cancellationToken);
 
             if (result.IsFailure)
                 return Unauthorized(new { error = result.Error.Description });
@@ -93,7 +86,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new ForgotPasswordCommand(model), cancellationToken);
+            var result = await sender.Send(new ForgotPasswordCommand(model), cancellationToken);
 
             if (result.IsFailure)
                 return NotFound(new { error = result.Error.Description });
@@ -110,7 +103,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new VerifyOtpCommand(model), cancellationToken);
+            var result = await sender.Send(new VerifyOtpCommand(model), cancellationToken);
 
             if (result.IsFailure)
                 return BadRequest(new { error = result.Error.Description });
@@ -128,7 +121,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new ResetPasswordCommand(model), cancellationToken);
+            var result = await sender.Send(new ResetPasswordCommand(model), cancellationToken);
 
             if (result.IsFailure)
             {

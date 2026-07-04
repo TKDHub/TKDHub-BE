@@ -12,6 +12,16 @@ public interface IIncomeInvoiceRepository
         Guid? branchId = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Net collected across matching invoices: sum of Paid transactions minus sum of
+    /// Refund transactions. Honors the same branch scope and <see cref="PagedRequest.Filters"/>
+    /// as <see cref="GetPagedAsync"/>, but ignores paging — it aggregates the full matching set.
+    /// </summary>
+    Task<decimal> GetTotalNetPaidAsync(
+        PagedRequest request,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default);
+
     void Add(IncomeInvoice invoice);
     void Update(IncomeInvoice invoice);
     void AddTransaction(IncomeTransaction transaction);

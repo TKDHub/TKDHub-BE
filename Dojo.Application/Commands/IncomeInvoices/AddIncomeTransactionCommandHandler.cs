@@ -31,6 +31,9 @@ internal sealed class AddIncomeTransactionCommandHandler : ICommandHandler<AddIn
         if (invoice is null)
             return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.NotFound);
 
+        if (invoice.Status == IncomeInvoiceStatusEnum.Voided)
+            return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.InvoiceVoided);
+
         if (invoice.Status == IncomeInvoiceStatusEnum.Closed)
             return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.AlreadyClosed);
 

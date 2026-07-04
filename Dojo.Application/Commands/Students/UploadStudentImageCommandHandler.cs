@@ -15,9 +15,6 @@ public sealed record UploadStudentImageCommand(
 
 internal sealed class UploadStudentImageCommandHandler : ICommandHandler<UploadStudentImageCommand, string>
 {
-    private static readonly string[] AllowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
-    private const long MaxImageBytes = 10 * 1024 * 1024; // 10 MB
-
     private readonly IStudentRepository _studentRepository;
     private readonly IImageService      _imageService;
     private readonly IUnitOfWork        _unitOfWork;
@@ -38,7 +35,17 @@ internal sealed class UploadStudentImageCommandHandler : ICommandHandler<UploadS
         if (student is null)
             return Result.Failure<string>(StudentErrors.NotFound);
 
-        var imageError = ValidateImage(request.Length, request.ContentType);
+        var validation = _imageService.ValidateFile(
+            request.Length, request.ContentType, StudentAttachmentSettings.MaxBytes, StudentAttachmentSettings.AllowedContentTypes);
+
+        var imageError = validation switch
+        {
+            FileValidationResult.Empty       => StudentErrors.ImageEmpty,
+            FileValidationResult.TooLarge    => StudentErrors.ImageTooLarge,
+            FileValidationResult.InvalidType => StudentErrors.ImageInvalidType,
+            _ => null
+        };
+
         if (imageError is not null)
             return Result.Failure<string>(imageError);
 
@@ -49,6 +56,7 @@ internal sealed class UploadStudentImageCommandHandler : ICommandHandler<UploadS
                 request.ImageStream,
                 request.FileName,
                 request.ContentType,
+                StudentAttachmentSettings.Folder,
                 cancellationToken);
         }
         catch
@@ -57,19 +65,10 @@ internal sealed class UploadStudentImageCommandHandler : ICommandHandler<UploadS
         }
 
         student.ProfileImageUrl = imageUrl;
-        student.ModifiedOn      = DateTimeOffset.UtcNow;
 
         _studentRepository.Update(student);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(imageUrl);
-    }
-
-    private static Error? ValidateImage(long length, string contentType)
-    {
-        if (length == 0)                                                        return StudentErrors.ImageEmpty;
-        if (length > MaxImageBytes)                                             return StudentErrors.ImageTooLarge;
-        if (!AllowedImageTypes.Contains(contentType.ToLowerInvariant()))        return StudentErrors.ImageInvalidType;
-        return null;
     }
 }

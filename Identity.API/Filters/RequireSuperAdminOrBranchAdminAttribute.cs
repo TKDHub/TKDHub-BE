@@ -25,14 +25,14 @@ public sealed class RequireSuperAdminOrBranchAdminAttribute : Attribute, IAsyncA
         var roleClaims = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToHashSet();
 
         // SuperAdmin — allow unconditionally
-        if (roleClaims.Contains(nameof(UserRoleEnum.SuberAdmin)))
+        if (roleClaims.Contains(((short)UserRoleEnum.SuberAdmin).ToString()))
         {
             await next();
             return;
         }
 
         // Admin — must belong to the branch in the route
-        if (roleClaims.Contains(nameof(UserRoleEnum.Admin)))
+        if (roleClaims.Contains(((short)UserRoleEnum.Admin).ToString()))
         {
             var routeBranchId = context.RouteData.Values["id"]?.ToString();
 

@@ -31,7 +31,7 @@ namespace Identity.Application.Services
             };
 
             foreach (var userRole in user.UserRoles)
-                claims.Add(new Claim(ClaimTypes.Role, userRole.RoleId.ToString()));
+                claims.Add(new Claim(ClaimTypes.Role, ((short)userRole.RoleId).ToString()));
 
             foreach (var branch in user.Branches)
             {

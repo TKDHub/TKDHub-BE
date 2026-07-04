@@ -80,6 +80,21 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                     b.Property<short>("Type")
                         .HasColumnType("smallint");
 
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("VoidedByEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("VoidedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTimeOffset?>("VoidedOn")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("StudentId")
@@ -126,6 +141,29 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("ModifiedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("RefundOfTransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RefundReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("RefundedByEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("RefundedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTimeOffset?>("RefundedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<short>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint")
+                        .HasDefaultValue((short)1);
+
                     b.Property<short>("StatusId")
                         .HasColumnType("smallint");
 
@@ -137,7 +175,74 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                     b.HasIndex("IncomeInvoiceId")
                         .HasDatabaseName("IX_IncomeTransactions_IncomeInvoiceId");
 
+                    b.HasIndex("RefundOfTransactionId")
+                        .HasDatabaseName("IX_IncomeTransactions_RefundOfTransactionId");
+
                     b.ToTable("IncomeTransactions", (string)null);
+                });
+
+            modelBuilder.Entity("Dojo.Domain.Entities.OutcomeInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("AttachmentUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CreatedByEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("ModifiedByEmail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ModifiedByName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("ModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<short>("StatusId")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId")
+                        .HasDatabaseName("IX_OutcomeInvoices_BranchId");
+
+                    b.ToTable("OutcomeInvoices", (string)null);
                 });
 
             modelBuilder.Entity("Dojo.Domain.Entities.Student", b =>

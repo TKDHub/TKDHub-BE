@@ -13,22 +13,15 @@ namespace Identity.API.Controllers;
 
 [Authorize]
 [Route("api/[controller]")]
-public class BranchesController : BaseApiController
+public class BranchesController(ISender sender) : BaseApiController
 {
-    private readonly ISender _sender;
-
-    public BranchesController(ISender sender)
-    {
-        _sender = sender;
-    }
-
     [HttpPost("search")]
     [RequireSuperAdmin]
     [ProducesResponseType(typeof(PagedResult<BranchDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllBranches([FromBody] PagedRequest request, CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new GetAllBranchesQuery(request), cancellationToken);
+        var result = await sender.Send(new GetAllBranchesQuery(request), cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error.Description });
@@ -43,7 +36,7 @@ public class BranchesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBranchById(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _sender.Send(new GetBranchByIdQuery(id), cancellationToken);
+        var result = await sender.Send(new GetBranchByIdQuery(id), cancellationToken);
 
         if (result.IsFailure)
             return NotFound(new { error = result.Error.Description });
@@ -60,7 +53,7 @@ public class BranchesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateBranch([FromBody] BranchModel model, CancellationToken cancellationToken)
     {
-        var result = await _sender.Send(new CreateBranchCommand(model), cancellationToken);
+        var result = await sender.Send(new CreateBranchCommand(model), cancellationToken);
 
         if (result.IsFailure)
             return result.Error == BranchErrors.NameAlreadyExists
@@ -82,7 +75,7 @@ public class BranchesController : BaseApiController
     {
         model.BranchId = id;
 
-        var result = await _sender.Send(new UpdateBranchCommand(model), cancellationToken);
+        var result = await sender.Send(new UpdateBranchCommand(model), cancellationToken);
 
         if (result.IsFailure)
         {
@@ -104,9 +97,9 @@ public class BranchesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteBranch(Guid id, [FromQuery] bool deleteRecursively = false, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> DeleteBranch(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new DeleteBranchCommand(id, deleteRecursively), cancellationToken);
+        var result = await sender.Send(new DeleteBranchCommand(id), cancellationToken);
 
         if (result.IsFailure)
             return result.Error == BranchErrors.NotFound

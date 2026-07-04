@@ -22,11 +22,17 @@ public sealed class IncomeInvoiceDto
     public decimal AmountPaid         { get; init; }
     public decimal RemainingAmount    { get; init; }
 
-    /// <summary>Open / Closed lifecycle state, set by the backend.</summary>
+    /// <summary>Open / Closed / Voided lifecycle state, set by the backend.</summary>
     public string Status { get; init; } = string.Empty;
 
     /// <summary>Derived Paid / PartiallyPaid / NotPaid, computed from the transactions.</summary>
     public string PaymentStatus { get; init; } = string.Empty;
+
+    // ── Void audit (populated only when Status == Voided) ────────
+    public DateTimeOffset? VoidedOn      { get; init; }
+    public string?         VoidedByEmail { get; init; }
+    public string?         VoidedByName  { get; init; }
+    public string?         VoidReason    { get; init; }
 
     public DateTimeOffset  CreatedOn  { get; init; }
     public DateTimeOffset? ModifiedOn { get; init; }

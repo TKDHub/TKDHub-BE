@@ -2,7 +2,7 @@ namespace Shared.Domain.Pagination
 {
     public enum FilterOperator
     {
-        Equals,
+        Equals = 1,
         NotEquals,
         GreaterThan,
         LessThan,

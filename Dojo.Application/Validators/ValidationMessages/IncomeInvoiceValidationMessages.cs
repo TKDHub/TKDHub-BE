@@ -10,4 +10,10 @@ public static class IncomeInvoiceValidationMessages
     public const string PaymentMethodInvalid = "Payment method is invalid.";
     public const string AmountInvalid        = "Amount must be greater than zero.";
     public const string MethodInvalid        = "Payment method is invalid.";
+
+    public const string VoidReasonRequired   = "A reason is required to void an invoice.";
+    public const string ReasonMaxLength      = "Reason cannot exceed 500 characters.";
+    public const string RefundReasonRequired = "A reason is required to refund a transaction.";
+    public const string InvoiceIdRequired    = "Invoice ID is required.";
+    public const string TransactionIdRequired = "Transaction ID is required.";
 }

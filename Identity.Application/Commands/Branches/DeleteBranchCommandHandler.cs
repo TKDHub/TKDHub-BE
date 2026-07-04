@@ -6,7 +6,7 @@ using Shared.Domain.Primitives;
 
 namespace Identity.Application.Commands.Branches;
 
-public sealed record DeleteBranchCommand(Guid BranchId, bool DeleteRecursively = false) : ICommand;
+public sealed record DeleteBranchCommand(Guid BranchId) : ICommand;
 
 internal sealed class DeleteBranchCommandHandler : ICommandHandler<DeleteBranchCommand>
 {

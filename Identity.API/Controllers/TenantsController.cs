@@ -11,21 +11,14 @@ using Shared.Domain.Pagination;
 namespace Identity.API.Controllers
 {
     [Route("api/[controller]")]
-    public class TenantsController : BaseApiController
+    public class TenantsController(ISender sender) : BaseApiController
     {
-        private readonly ISender _sender;
-
-        public TenantsController(ISender sender)
-        {
-            _sender = sender;
-        }
-
         [Authorize]
         [HttpPost("search")]
         [ProducesResponseType(typeof(PagedResult<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllTenants([FromBody] PagedRequest request, CancellationToken cancellationToken = default)
         {
-            var result = await _sender.Send(new GetAllTenantsQuery(request), cancellationToken);
+            var result = await sender.Send(new GetAllTenantsQuery(request), cancellationToken);
 
             if (result.IsFailure)
                 return BadRequest(new { error = result.Error.Description });
@@ -39,7 +32,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantById(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new GetTenantByIdQuery(id), cancellationToken);
+            var result = await sender.Send(new GetTenantByIdQuery(id), cancellationToken);
 
             if (result.IsFailure)
                 return NotFound(new { error = result.Error.Description });
@@ -53,7 +46,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantBySubdomain(string subdomain, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new GetTenantBySubdomainQuery(subdomain), cancellationToken);
+            var result = await sender.Send(new GetTenantBySubdomainQuery(subdomain), cancellationToken);
 
             if (result.IsFailure)
                 return NotFound(new { error = result.Error.Description });
@@ -68,7 +61,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> CreateTenant([FromBody] TenantModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new CreateTenantCommand(model), cancellationToken);
+            var result = await sender.Send(new CreateTenantCommand(model), cancellationToken);
 
             if (result.IsFailure)
                 return BadRequest(new { error = result.Error.Description });
@@ -84,7 +77,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTenant([FromBody] TenantModel model, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new UpdateTenantCommand(model), cancellationToken);
+            var result = await sender.Send(new UpdateTenantCommand(model), cancellationToken);
 
             if (result.IsFailure)
                 return BadRequest(new { error = result.Error.Description });
@@ -100,7 +93,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteTenant(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new DeleteTenantCommand(id), cancellationToken);
+            var result = await sender.Send(new DeleteTenantCommand(id), cancellationToken);
 
             if (result.IsFailure)
             {

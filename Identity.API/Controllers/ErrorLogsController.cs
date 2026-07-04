@@ -3,21 +3,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Application.Models;
 using Shared.Domain.Entities;
+using Shared.Domain.Pagination;
 using Shared.Domain.Repositories;
 
 namespace Identity.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ErrorLogsController : ControllerBase
+    public class ErrorLogsController(IErrorLogRepository errorLogRepository) : ControllerBase
     {
-        private readonly IErrorLogRepository _errorLogRepository;
-
-        public ErrorLogsController(IErrorLogRepository errorLogRepository)
-        {
-            _errorLogRepository = errorLogRepository;
-        }
-
         /// <summary>
         /// Receives an error log from any downstream service and persists it centrally.
         /// Authenticated via the shared <c>X-Rest-Key</c> header (service-to-service).
@@ -57,32 +51,22 @@ namespace Identity.API.Controllers
             if (!string.IsNullOrWhiteSpace(payload.AdditionalData))
                 errorLog.SetAdditionalData(payload.AdditionalData);
 
-            _errorLogRepository.Add(errorLog);
-            await _errorLogRepository.SaveChangesAsync(cancellationToken);
+            errorLogRepository.Add(errorLog);
+            await errorLogRepository.SaveChangesAsync(cancellationToken);
 
             return NoContent();
         }
 
         /// <summary>Returns all error logs (paginated). Requires user JWT.</summary>
-        [HttpGet]
+        [HttpPost("search")]
         [Authorize]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PagedResult<ErrorLog>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllErrors(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize   = 50,
+            [FromBody] PagedRequest request,
             CancellationToken cancellationToken = default)
         {
-            var errors     = await _errorLogRepository.GetAllAsync(pageNumber, pageSize, cancellationToken);
-            var totalCount = await _errorLogRepository.GetCountAsync(cancellationToken);
-
-            return Ok(new
-            {
-                data       = errors,
-                pageNumber,
-                pageSize,
-                totalCount,
-                totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-            });
+            var result = await errorLogRepository.GetPagedAsync(request, cancellationToken);
+            return Ok(result);
         }
 
         /// <summary>Returns all unresolved error logs. Requires user JWT.</summary>
@@ -91,7 +75,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUnresolvedErrors(CancellationToken cancellationToken)
         {
-            var errors = await _errorLogRepository.GetUnresolvedAsync(cancellationToken);
+            var errors = await errorLogRepository.GetUnresolvedAsync(cancellationToken);
             return Ok(errors);
         }
 
@@ -102,34 +86,34 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetErrorById(Guid id, CancellationToken cancellationToken)
         {
-            var error = await _errorLogRepository.GetByIdAsync(id, cancellationToken);
+            var error = await errorLogRepository.GetByIdAsync(id, cancellationToken);
             if (error is null) return NotFound();
             return Ok(error);
         }
 
         /// <summary>Marks an error log as resolved. Requires user JWT.</summary>
-        [HttpPost("{id:guid}/resolve")]
+        [HttpPost("resolve")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ResolveError(
-            Guid id,
             [FromBody] ResolveErrorRequest request,
             CancellationToken cancellationToken)
         {
-            var error = await _errorLogRepository.GetByIdAsync(id, cancellationToken);
+            var error = await errorLogRepository.GetByIdAsync(request.Id, cancellationToken);
             if (error is null) return NotFound();
 
             var userName = User.Identity?.Name ?? "Unknown";
             error.Resolve(userName, request.Notes);
 
-            await _errorLogRepository.SaveChangesAsync(cancellationToken);
+            await errorLogRepository.SaveChangesAsync(cancellationToken);
             return Ok(new { message = "Error resolved successfully" });
         }
     }
 
     public sealed record ResolveErrorRequest
     {
+        public Guid Id { get; init; }
         public string? Notes { get; init; }
     }
 }

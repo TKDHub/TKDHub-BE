@@ -79,12 +79,14 @@ public abstract class BaseDbContext : DbContext
 
         foreach (var entry in ChangeTracker.Entries())
         {
-            if (entry.Entity is not AuditableEntity<Guid> entity) continue;
+            if (entry.Entity is not IAuditable entity) continue;
 
             if (entry.State == EntityState.Added)
             {
-                if (_tenantContext.IsMultiTenant)
-                    entity.TenantId = _tenantContext.TenantId;
+                // Only entities that actually belong to a tenant get TenantId stamped —
+                // Tenant itself is IAuditable but not IHasTenant, so it's skipped here.
+                if (entity is IHasTenant tenantEntity && _tenantContext.IsMultiTenant)
+                    tenantEntity.TenantId = _tenantContext.TenantId;
 
                 // Auto-set BranchId only when not already provided
                 if (entity is IHasBranch branchEntity

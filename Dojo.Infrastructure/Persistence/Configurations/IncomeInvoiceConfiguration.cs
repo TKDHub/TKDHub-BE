@@ -37,6 +37,11 @@ internal sealed class IncomeInvoiceConfiguration : IEntityTypeConfiguration<Inco
             .IsRequired()
             .HasConversion<short>();
 
+        // ── Void audit (nullable — only set when Status == Voided) ──
+        builder.Property(i => i.VoidedByEmail).HasMaxLength(150);
+        builder.Property(i => i.VoidedByName).HasMaxLength(150);
+        builder.Property(i => i.VoidReason).HasMaxLength(500);
+
         builder.HasOne(i => i.Student)
             .WithMany()
             .HasForeignKey(i => i.StudentId)

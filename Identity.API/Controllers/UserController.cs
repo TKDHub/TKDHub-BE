@@ -15,15 +15,8 @@ namespace Identity.API.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
-    public class UserController : BaseApiController
+    public class UserController(ISender sender) : BaseApiController
     {
-        private readonly ISender _sender;
-
-        public UserController(ISender sender)
-        {
-            _sender = sender;
-        }
-
         [HttpGet("getCurrentUser")]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -34,7 +27,7 @@ namespace Identity.API.Controllers
             if (userId == Guid.Empty)
                 return Unauthorized();
 
-            var result = await _sender.Send(new GetCurrentUserQuery(userId), cancellationToken);
+            var result = await sender.Send(new GetCurrentUserQuery(userId), cancellationToken);
 
             if (result.IsFailure)
                 return NotFound(new { error = result.Error.Description });
@@ -48,7 +41,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetAllUsers([FromBody] PagedRequest request, CancellationToken cancellationToken = default)
         {
-            var result = await _sender.Send(new GetAllUsersQuery(request), cancellationToken);
+            var result = await sender.Send(new GetAllUsersQuery(request), cancellationToken);
 
             if (result.IsFailure)
                 return BadRequest(new { error = result.Error.Description });
@@ -63,7 +56,7 @@ namespace Identity.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetUserById(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new GetUserByIdQuery(id), cancellationToken);
+            var result = await sender.Send(new GetUserByIdQuery(id), cancellationToken);
 
             if (result.IsFailure)
                 return NotFound(new { error = result.Error.Description });
@@ -85,7 +78,7 @@ namespace Identity.API.Controllers
             model.ModifiedByEmail = GetUserEmailFromClaims();
             model.ModifiedByName = GetUserNameFromClaims();
 
-            var result = await _sender.Send(new UpdateProfileCommand(model), cancellationToken);
+            var result = await sender.Send(new UpdateProfileCommand(model), cancellationToken);
 
             if (result.IsFailure)
                 return BadRequest(new { error = result.Error.Description });
@@ -110,7 +103,7 @@ namespace Identity.API.Controllers
             model.ModifiedByEmail = GetUserEmailFromClaims();
             model.ModifiedByName = GetUserNameFromClaims();
 
-            var result = await _sender.Send(new UpdateAccountCommand(id, model), cancellationToken);
+            var result = await sender.Send(new UpdateAccountCommand(id, model), cancellationToken);
 
             if (result.IsFailure)
             {
@@ -138,7 +131,7 @@ namespace Identity.API.Controllers
             if (requestedByUserId == Guid.Empty)
                 return Unauthorized();
 
-            var result = await _sender.Send(new DeleteUserCommand(id, requestedByUserId), cancellationToken);
+            var result = await sender.Send(new DeleteUserCommand(id, requestedByUserId), cancellationToken);
 
             if (result.IsFailure)
                 return result.Error == UserErrors.Forbidden
@@ -161,7 +154,7 @@ namespace Identity.API.Controllers
 
             model.UserId = userId;
 
-            var result = await _sender.Send(new ChangePasswordCommand(model), cancellationToken);
+            var result = await sender.Send(new ChangePasswordCommand(model), cancellationToken);
 
             if (result.IsFailure)
             {
@@ -183,7 +176,7 @@ namespace Identity.API.Controllers
             if (userId == Guid.Empty)
                 return Unauthorized(new { error = UserErrors.InvalidToken.Description });
 
-            var result = await _sender.Send(new LogoutCommand(userId), cancellationToken);
+            var result = await sender.Send(new LogoutCommand(userId), cancellationToken);
 
             if (result.IsFailure)
                 return BadRequest(new { error = result.Error.Description });

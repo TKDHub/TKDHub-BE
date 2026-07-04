@@ -3,7 +3,7 @@ using Shared.Domain.Enums;
 
 namespace Shared.Domain.Primitives;
 
-public abstract class AuditableEntity<Tkey> : IHasKey<Tkey>, IHasTenant
+public abstract class AuditableEntity<Tkey> : IHasKey<Tkey>, IHasTenant, IAuditable
 {
     //protected Entity(Guid id)
     //{

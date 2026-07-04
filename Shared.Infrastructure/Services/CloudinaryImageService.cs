@@ -28,12 +28,13 @@ internal sealed class CloudinaryImageService : IImageService
         Stream            stream,
         string            fileName,
         string            contentType,
+        string            folder,
         CancellationToken cancellationToken = default)
     {
         var uploadParams = new ImageUploadParams
         {
             File           = new FileDescription(fileName, stream),
-            Folder         = "students",
+            Folder         = folder,
             UseFilename    = false,
             UniqueFilename = true,
             Overwrite      = false
@@ -56,5 +57,13 @@ internal sealed class CloudinaryImageService : IImageService
 
         if (result.Error is not null)
             _logger.LogWarning("Cloudinary delete failed for {ImageId}: {Error}", imageId, result.Error.Message);
+    }
+
+    public FileValidationResult ValidateFile(long length, string contentType, long maxBytes, IReadOnlyCollection<string> allowedContentTypes)
+    {
+        if (length == 0) return FileValidationResult.Empty;
+        if (length > maxBytes) return FileValidationResult.TooLarge;
+        if (!allowedContentTypes.Contains(contentType.ToLowerInvariant())) return FileValidationResult.InvalidType;
+        return FileValidationResult.Valid;
     }
 }

@@ -15,6 +15,6 @@ public sealed class UserContext : IUserContext
     public bool IsSuperAdmin
         => _httpContextAccessor.HttpContext?.User
                .FindAll(ClaimTypes.Role)
-               .Any(c => c.Value == nameof(UserRoleEnum.SuberAdmin))
+               .Any(c => c.Value == ((short)UserRoleEnum.SuberAdmin).ToString())
            ?? false;
 }

@@ -14,23 +14,11 @@ namespace Dojo.API.Controllers;
 
 [Authorize]
 [Route("api/[controller]")]
-public class SubscriptionPlansController : BaseApiController
+public class SubscriptionPlansController(ISender sender, IBranchContext branchContext, ITenantContext tenantContext) : BaseApiController
 {
-    private readonly ISender        _sender;
-    private readonly IBranchContext _branchContext;
-    private readonly ITenantContext _tenantContext;
-
-    public SubscriptionPlansController(ISender sender, IBranchContext branchContext, ITenantContext tenantContext)
-    {
-        _sender        = sender;
-        _branchContext = branchContext;
-        _tenantContext = tenantContext;
-    }
-
     /// <summary>
     /// Returns a paginated list of subscription plans for the current branch.
-    /// The paging/sorting/filtering request is sent in the body; optionally filter by
-    /// active/archived status using the <c>status</c> query parameter.
+    /// The paging/sorting/filtering request (including any status filter) is sent in the body.
     /// </summary>
     [HttpPost("search")]
     [RequireSuperAdminOrBranchAdmin]
@@ -38,10 +26,9 @@ public class SubscriptionPlansController : BaseApiController
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllSubscriptionPlans(
         [FromBody] PagedRequest request,
-        [FromQuery] string? status = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new GetAllSubscriptionPlansQuery(request, status), cancellationToken);
+        var result = await sender.Send(new GetAllSubscriptionPlansQuery(request), cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error.Description });
@@ -57,7 +44,7 @@ public class SubscriptionPlansController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubscriptionPlanById(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new GetSubscriptionPlanByIdQuery(id), cancellationToken);
+        var result = await sender.Send(new GetSubscriptionPlanByIdQuery(id), cancellationToken);
 
         if (result.IsFailure)
             return NotFound(new { error = result.Error.Description });
@@ -83,7 +70,7 @@ public class SubscriptionPlansController : BaseApiController
             CreatedByName  = GetUserNameFromClaims()
         };
 
-        var result = await _sender.Send(new CreateSubscriptionPlanCommand(model, _branchContext.BranchId, _tenantContext.TenantId), cancellationToken);
+        var result = await sender.Send(new CreateSubscriptionPlanCommand(model, branchContext.BranchId, tenantContext.TenantId), cancellationToken);
 
         if (result.IsFailure)
             return result.Error == SubscriptionPlanErrors.NameAlreadyExists
@@ -114,7 +101,7 @@ public class SubscriptionPlansController : BaseApiController
             ModifiedByName  = GetUserNameFromClaims()
         };
 
-        var result = await _sender.Send(new UpdateSubscriptionPlanCommand(model), cancellationToken);
+        var result = await sender.Send(new UpdateSubscriptionPlanCommand(model), cancellationToken);
 
         if (result.IsFailure)
         {
@@ -140,7 +127,7 @@ public class SubscriptionPlansController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RestoreSubscriptionPlan(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new RestoreSubscriptionPlanCommand(id), cancellationToken);
+        var result = await sender.Send(new RestoreSubscriptionPlanCommand(id), cancellationToken);
 
         if (result.IsFailure)
         {
@@ -163,7 +150,7 @@ public class SubscriptionPlansController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ArchiveSubscriptionPlan(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new ArchiveSubscriptionPlanCommand(id), cancellationToken);
+        var result = await sender.Send(new ArchiveSubscriptionPlanCommand(id), cancellationToken);
 
         if (result.IsFailure)
             return result.Error == SubscriptionPlanErrors.NotFound

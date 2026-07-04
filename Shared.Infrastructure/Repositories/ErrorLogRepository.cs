@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Entities;
+using Shared.Domain.Pagination;
 using Shared.Domain.Repositories;
+using Shared.Infrastructure.Extensions;
 
 namespace Shared.Infrastructure.Repositories
 {
@@ -18,13 +20,11 @@ namespace Shared.Infrastructure.Repositories
             return await _dbContext.Set<ErrorLog>().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         }
 
-        public async Task<List<ErrorLog>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ErrorLog>> GetPagedAsync(PagedRequest request, CancellationToken cancellationToken = default)
         {
             return await _dbContext.Set<ErrorLog>()
                 .OrderByDescending(e => e.Timestamp)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(cancellationToken);
+                .ToPagedResultAsync(request, cancellationToken);
         }
 
         public async Task<List<ErrorLog>> GetUnresolvedAsync(CancellationToken cancellationToken = default)
@@ -49,11 +49,6 @@ namespace Shared.Infrastructure.Repositories
                 .Where(e => e.Severity == severity)
                 .OrderByDescending(e => e.Timestamp)
                 .ToListAsync(cancellationToken);
-        }
-
-        public async Task<int> GetCountAsync(CancellationToken cancellationToken = default)
-        {
-            return await _dbContext.Set<ErrorLog>().CountAsync(cancellationToken);
         }
 
         public void Add(ErrorLog errorLog)

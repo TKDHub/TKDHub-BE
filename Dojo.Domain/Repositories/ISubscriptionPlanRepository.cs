@@ -7,7 +7,7 @@ public interface ISubscriptionPlanRepository
 {
     Task<SubscriptionPlan?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<SubscriptionPlan?> GetByIdWithStudentsAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<PagedResult<SubscriptionPlan>> GetPagedAsync(PagedRequest request, string? status, Guid? branchId = null, CancellationToken cancellationToken = default);
+    Task<PagedResult<SubscriptionPlan>> GetPagedAsync(PagedRequest request, Guid? branchId = null, CancellationToken cancellationToken = default);
     Task<bool> ExistsByNameAsync(string name, Guid branchId, Guid? excludeId, CancellationToken cancellationToken = default);
     void Add(SubscriptionPlan plan);
     void Update(SubscriptionPlan plan);
