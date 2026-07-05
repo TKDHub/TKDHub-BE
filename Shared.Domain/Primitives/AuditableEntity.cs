@@ -16,11 +16,11 @@ public abstract class AuditableEntity<Tkey> : IHasKey<Tkey>, IHasTenant, IAudita
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Tkey Id { get; set; }
     public Guid TenantId { get; set; }
-    public required DateTimeOffset CreatedOn { get; set; }
-    public DateTimeOffset? ModifiedOn { get; set; }
-    public string CreatedByEmail { get; set; }
-    public string CreatedByName { get; set; }
-    public string? ModifiedByEmail { get; set; }
-    public string? ModifiedByName { get; set; }
-    public Int16 StatusId { get; set; } = (short)EntityStatusEnum.Active;
+    [Searchable] public required DateTimeOffset CreatedOn { get; set; }
+    [Searchable] public DateTimeOffset? ModifiedOn { get; set; }
+    [Searchable] public string CreatedByEmail { get; set; }
+    [Searchable] public string CreatedByName { get; set; }
+    [Searchable] public string? ModifiedByEmail { get; set; }
+    [Searchable] public string? ModifiedByName { get; set; }
+    [Searchable] public Int16 StatusId { get; set; } = (short)EntityStatusEnum.Active;
 }

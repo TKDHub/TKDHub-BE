@@ -4,11 +4,11 @@ namespace Dojo.Domain.Entities;
 
 public sealed class SubscriptionPlan : AuditableEntity<Guid>, IHasBranch
 {
-    public Guid    BranchId       { get; set; }
-    public string  Name           { get; set; } = string.Empty;
-    public string? Description    { get; set; }
-    public int     DurationMonths { get; set; }
-    public decimal Price          { get; set; }
+    [Searchable] public Guid    BranchId       { get; set; }
+    [Searchable] public string  Name           { get; set; } = string.Empty;
+    [Searchable] public string? Description    { get; set; }
+    [Searchable] public int     DurationMonths { get; set; }
+    [Searchable] public decimal Price          { get; set; }
 
     // ── Relations ─────────────────────────────────────────────────
     public ICollection<Student> Students { get; set; } = [];

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Pagination;
+using Shared.Domain.Primitives;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -52,6 +53,8 @@ namespace Shared.Infrastructure.Extensions
         /// Applies a single dynamic filter to the query using expression trees.
         /// Supports: =, !=, >, <, >=, <=, Contains, StartsWith, EndsWith.
         /// Column supports dot notation for nested properties: "Address.City".
+        /// Only properties marked <see cref="SearchableAttribute"/> can be filtered on —
+        /// anything else is silently skipped (fail-closed), so sensitive columns can't be probed.
         /// </summary>
         public static IQueryable<T> ApplyFilter<T>(this IQueryable<T> query, FilterCriteria filter)
         {
@@ -60,18 +63,9 @@ namespace Shared.Infrastructure.Extensions
 
             var parameter = Expression.Parameter(typeof(T), "x");
 
-            // Support nested properties via dot notation e.g. "Address.City"
-            Expression property = parameter;
-            foreach (var member in filter.Column.Split('.'))
-            {
-                var propInfo = property.Type.GetProperty(member,
-                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-
-                if (propInfo is null)
-                    return query; // Property does not exist — skip this filter safely
-
-                property = Expression.Property(property, propInfo);
-            }
+            // Resolve the (possibly nested) column, requiring every hop to be whitelisted.
+            if (!TryResolveSearchableProperty(parameter, filter.Column, out var property))
+                return query; // unknown or non-whitelisted column — skip this filter safely
 
             var propertyType = GetUnderlyingType(((MemberExpression)property).Member);
 
@@ -108,17 +102,17 @@ namespace Shared.Infrastructure.Extensions
         }
 
         /// <summary>
-        /// Applies dynamic sorting on any property by name.
+        /// Applies dynamic sorting on a property by name (dot notation supported).
+        /// Only properties marked <see cref="SearchableAttribute"/> can be sorted on —
+        /// anything else leaves the query unsorted (fail-closed), so ordering can't leak
+        /// the relative values of sensitive columns.
         /// </summary>
         public static IQueryable<T> ApplySort<T>(this IQueryable<T> query, string sortBy, bool descending)
         {
             var parameter = Expression.Parameter(typeof(T), "x");
 
-            Expression property = parameter;
-            foreach (var member in sortBy.Split('.'))
-            {
-                property = Expression.Property(property, member);
-            }
+            if (!TryResolveSearchableProperty(parameter, sortBy, out var property))
+                return query; // unknown or non-whitelisted column — ignore the sort request
 
             var lambda = Expression.Lambda(property, parameter);
             var methodName = descending ? "OrderByDescending" : "OrderBy";
@@ -131,6 +125,27 @@ namespace Shared.Infrastructure.Extensions
                 Expression.Quote(lambda));
 
             return query.Provider.CreateQuery<T>(result);
+        }
+
+        // Walks a (possibly dotted) property path from the parameter, requiring EVERY hop to be
+        // decorated with [Searchable]. Fail-closed: returns false if any segment is missing or
+        // not whitelisted, so clients can only ever filter/sort on explicitly-allowed columns.
+        private static bool TryResolveSearchableProperty(ParameterExpression parameter, string path, out Expression property)
+        {
+            property = parameter;
+
+            foreach (var member in path.Split('.'))
+            {
+                var propInfo = property.Type.GetProperty(member,
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+
+                if (propInfo is null || !propInfo.IsDefined(typeof(SearchableAttribute), inherit: true))
+                    return false;
+
+                property = Expression.Property(property, propInfo);
+            }
+
+            return true;
         }
 
         // Converts the raw string filter value to the target property type.

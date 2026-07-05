@@ -32,26 +32,29 @@ namespace Shared.Domain.Entities
 
         private ErrorLog() { }
 
-        public string Message { get; private set; } = string.Empty;
+        [Searchable] public string Message { get; private set; } = string.Empty;
+        // NOT [Searchable]: free-form diagnostics that can carry secrets/PII —
+        // StackTrace, InnerException, QueryString, RequestBody (may contain posted passwords),
+        // UserAgent, IpAddress, TraceId, ResolutionNotes, AdditionalData.
         public string? StackTrace { get; private set; }
         public string? InnerException { get; private set; }
-        public string ExceptionType { get; private set; } = string.Empty;
-        public int? StatusCode { get; private set; }
-        public string? RequestPath { get; private set; }
-        public string? RequestMethod { get; private set; }
+        [Searchable] public string ExceptionType { get; private set; } = string.Empty;
+        [Searchable] public int? StatusCode { get; private set; }
+        [Searchable] public string? RequestPath { get; private set; }
+        [Searchable] public string? RequestMethod { get; private set; }
         public string? QueryString { get; private set; }
         public string? RequestBody { get; private set; }
         public string? UserAgent { get; private set; }
         public string? IpAddress { get; private set; }
-        public string? UserId { get; private set; }
-        public string? TenantId { get; private set; }
+        [Searchable] public string? UserId { get; private set; }
+        [Searchable] public string? TenantId { get; private set; }
         public string? TraceId { get; private set; }
-        public string Severity { get; private set; } = string.Empty;
-        public DateTimeOffset Timestamp { get; private set; }
-        public bool IsResolved { get; private set; }
+        [Searchable] public string Severity { get; private set; } = string.Empty;
+        [Searchable] public DateTimeOffset Timestamp { get; private set; }
+        [Searchable] public bool IsResolved { get; private set; }
         public string? ResolutionNotes { get; private set; }
-        public DateTimeOffset? ResolvedAt { get; private set; }
-        public string? ResolvedBy { get; private set; }
+        [Searchable] public DateTimeOffset? ResolvedAt { get; private set; }
+        [Searchable] public string? ResolvedBy { get; private set; }
         public string? AdditionalData { get; private set; }
 
         public static ErrorLog Create(

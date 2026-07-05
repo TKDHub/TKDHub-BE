@@ -4,14 +4,17 @@ namespace Identity.Domain.Entities;
 
 public sealed class User : AuditableEntity<Guid>
 {
-    public string Username { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    [Searchable] public string Username { get; set; } = string.Empty;
+    [Searchable] public string Email { get; set; } = string.Empty;
+    // NOT [Searchable]: exposing this to dynamic filtering/sorting would let a client
+    // extract the hash character-by-character via a StartsWith/ordering oracle.
     public string PasswordHash { get; set; } = string.Empty;
-    public bool EmailConfirmed { get; set; }
-    public DateTime? LastLoginDate { get; set; }
-    public int FailedLoginAttempts { get; set; }
-    public DateTime? LockoutEnd { get; set; }
-    public string? PhoneNumber { get; set; }
+    [Searchable] public bool EmailConfirmed { get; set; }
+    [Searchable] public DateTime? LastLoginDate { get; set; }
+    [Searchable] public int FailedLoginAttempts { get; set; }
+    [Searchable] public DateTime? LockoutEnd { get; set; }
+    [Searchable] public string? PhoneNumber { get; set; }
+    // NOT [Searchable]: secret tokens — same oracle-extraction risk as PasswordHash.
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiryTime { get; set; }
     public string? PasswordResetToken { get; set; }

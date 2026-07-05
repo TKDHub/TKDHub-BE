@@ -5,20 +5,20 @@ namespace Identity.Domain.Entities
 {
     public sealed class Tenant : BaseEntity<Guid>, IAuditable
     {
-        public string Name { get; set; } = string.Empty;
-        public string Subdomain { get; set; } = string.Empty;
-        public string ContactEmail { get; set; } = string.Empty;
-        public string SubscriptionPlan { get; set; } = string.Empty;
-        public DateTime? SubscriptionExpiresAt { get; set; }
-        public int MaxUsers { get; set; }
-        public int? MaxStorageGB { get; set; }
-        public  DateTimeOffset CreatedOn { get; set; }
-        public DateTimeOffset? ModifiedOn { get; set; }
-        public required string CreatedByEmail { get; set; }
-        public required string CreatedByName { get; set; }
-        public string? ModifiedByEmail { get; set; }
-        public string? ModifiedByName { get; set; }
-        public required Int16 StatusId { get; set; } = (short)EntityStatusEnum.Active;
+        [Searchable] public string Name { get; set; } = string.Empty;
+        [Searchable] public string Subdomain { get; set; } = string.Empty;
+        [Searchable] public string ContactEmail { get; set; } = string.Empty;
+        [Searchable] public string SubscriptionPlan { get; set; } = string.Empty;
+        [Searchable] public DateTime? SubscriptionExpiresAt { get; set; }
+        [Searchable] public int MaxUsers { get; set; }
+        [Searchable] public int? MaxStorageGB { get; set; }
+        [Searchable] public  DateTimeOffset CreatedOn { get; set; }
+        [Searchable] public DateTimeOffset? ModifiedOn { get; set; }
+        [Searchable] public required string CreatedByEmail { get; set; }
+        [Searchable] public required string CreatedByName { get; set; }
+        [Searchable] public string? ModifiedByEmail { get; set; }
+        [Searchable] public string? ModifiedByName { get; set; }
+        [Searchable] public required Int16 StatusId { get; set; } = (short)EntityStatusEnum.Active;
 
         public ICollection<Branch> Branches { get; set; } = new List<Branch>();
     }

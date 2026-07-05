@@ -5,29 +5,30 @@ namespace Dojo.Domain.Entities;
 
 public sealed class Student : AuditableEntity<Guid>, IHasBranch
 {
-    public Guid BranchId { get; set; }
+    [Searchable] public Guid BranchId { get; set; }
 
     // ── Identity ────────────────────────────────────────────────
-    public string  FirstName    { get; set; } = string.Empty;
-    public string  LastName     { get; set; } = string.Empty;
-    public string? Email        { get; set; }
-    public string  PhoneNumber  { get; set; } = string.Empty;
+    [Searchable] public string  FirstName    { get; set; } = string.Empty;
+    [Searchable] public string  LastName     { get; set; } = string.Empty;
+    [Searchable] public string? Email        { get; set; }
+    [Searchable] public string  PhoneNumber  { get; set; } = string.Empty;
 
     // ── Demographics ─────────────────────────────────────────────
-    public DateOnly    DateOfBirth { get; set; }
-    public GenderEnum  Gender      { get; set; }
+    [Searchable] public DateOnly    DateOfBirth { get; set; }
+    [Searchable] public GenderEnum  Gender      { get; set; }
 
     // ── Membership ───────────────────────────────────────────────
-    public DateOnly          StartDate          { get; set; }
-    public BeltLevelEnum     BeltLevel          { get; set; }
-    public Guid              SubscriptionPlanId { get; set; }
+    [Searchable] public DateOnly          StartDate          { get; set; }
+    [Searchable] public BeltLevelEnum     BeltLevel          { get; set; }
+    [Searchable] public Guid              SubscriptionPlanId { get; set; }
 
     // ── Snapshot (frozen at registration) ────────────────────────
-    public decimal Price          { get; set; }
-    public string  Currency       { get; set; } = string.Empty;
-    public int     DurationMonths { get; set; }
+    [Searchable] public decimal Price          { get; set; }
+    [Searchable] public string  Currency       { get; set; } = string.Empty;
+    [Searchable] public int     DurationMonths { get; set; }
 
     // ── Optional ─────────────────────────────────────────────────
+    // NOT [Searchable]: ProfileImageUrl (no use case) and EmergencyContact (third-party PII).
     public string? ProfileImageUrl { get; set; }
     public string? EmergencyContact { get; set; }
 

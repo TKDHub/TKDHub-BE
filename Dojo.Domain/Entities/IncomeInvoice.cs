@@ -11,18 +11,18 @@ namespace Dojo.Domain.Entities;
 /// </summary>
 public sealed class IncomeInvoice : AuditableEntity<Guid>, IHasBranch
 {
-    public Guid BranchId { get; set; }
-    public Guid StudentId { get; set; }
+    [Searchable] public Guid BranchId { get; set; }
+    [Searchable] public Guid StudentId { get; set; }
 
-    public IncomeInvoiceTypeEnum Type { get; set; }
+    [Searchable] public IncomeInvoiceTypeEnum Type { get; set; }
 
     // ── Frozen at creation (source of truth) ─────────────────────
-    public decimal           OriginalPrice { get; set; }
-    public DiscountTypeEnum? DiscountType  { get; set; }
-    public decimal           DiscountValue { get; set; }
-    public string            Currency      { get; set; } = string.Empty;
+    [Searchable] public decimal           OriginalPrice { get; set; }
+    [Searchable] public DiscountTypeEnum? DiscountType  { get; set; }
+    [Searchable] public decimal           DiscountValue { get; set; }
+    [Searchable] public string            Currency      { get; set; } = string.Empty;
 
-    public IncomeInvoiceStatusEnum Status { get; set; } = IncomeInvoiceStatusEnum.Open;
+    [Searchable] public IncomeInvoiceStatusEnum Status { get; set; } = IncomeInvoiceStatusEnum.Open;
 
     // ── Void audit (set only when Status == Voided) ──────────────
     public DateTimeOffset? VoidedOn      { get; set; }
