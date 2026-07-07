@@ -1,0 +1,32 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-test:
+    name: Build & Run Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore TKDHub.sln
+
+      - name: Build
+        run: dotnet build TKDHub.sln --no-restore --configuration Release
+
+      # Includes the Testcontainers-based Postgres integration tests — Docker is
+      # preinstalled and running on GitHub-hosted ubuntu-latest runners.
+      - name: Run test suite
+        run: dotnet test TKDHub.sln --no-build --configuration Release --logger "console;verbosity=normal"

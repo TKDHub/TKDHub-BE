@@ -1,3 +1,4 @@
+using System.Reflection;
 using FluentValidation;
 using MediatR;
 using Shared.Domain.Primitives;
@@ -50,6 +51,14 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         return await next();
     }
 
+    // Result<TValue>.Failure is declared on the base Result class, and Type.GetMethod on a
+    // constructed generic type does NOT find inherited static members without
+    // BindingFlags.FlattenHierarchy — so this resolves the open generic method straight off
+    // Result itself instead of off the constructed Result<TValue> type.
+    private static readonly MethodInfo GenericFailureMethod = typeof(Result)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .Single(m => m.Name == nameof(Result.Failure) && m.IsGenericMethodDefinition);
+
     private static TResult CreateValidationResult<TResult>(Error[] errors)
         where TResult : Result
     {
@@ -58,11 +67,8 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             return (Result.Failure(errors[0]) as TResult)!;
         }
 
-        object validationResult = typeof(Result<>)
-            .GetGenericTypeDefinition()
-            .MakeGenericType(typeof(TResult).GenericTypeArguments[0])
-            .GetMethod(nameof(Result.Failure))!
-            .Invoke(null, new object?[] { errors[0] })!;
+        var closedFailureMethod = GenericFailureMethod.MakeGenericMethod(typeof(TResult).GenericTypeArguments[0]);
+        var validationResult = closedFailureMethod.Invoke(null, [errors[0]])!;
 
         return (TResult)validationResult;
     }
