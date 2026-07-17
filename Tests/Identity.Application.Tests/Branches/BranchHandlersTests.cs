@@ -40,7 +40,7 @@ public class CreateBranchCommandHandlerTests
     private readonly IBranchRepository _branches = Substitute.For<IBranchRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private CreateBranchCommandHandler CreateSut() => new(_branches, _uow);
+    private CreateBranchCommandHandler CreateSut() => new(_branches, _uow, NullLogger<CreateBranchCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenNameMissing_ReturnsNameRequired()
@@ -139,7 +139,7 @@ public class DeleteBranchCommandHandlerTests
     private readonly IBranchRepository _branches = Substitute.For<IBranchRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private DeleteBranchCommandHandler CreateSut() => new(_branches, _uow);
+    private DeleteBranchCommandHandler CreateSut() => new(_branches, _uow, NullLogger<DeleteBranchCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenNotFound_ReturnsNotFound()
@@ -176,7 +176,7 @@ public class GetBranchByIdQueryHandlerTests
     {
         _branches.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Branch?)null);
 
-        var result = await new GetBranchByIdQueryHandler(_branches)
+        var result = await new GetBranchByIdQueryHandler(_branches, NullLogger<GetBranchByIdQueryHandler>.Instance)
             .Handle(new GetBranchByIdQuery(Guid.NewGuid()), default);
 
         Assert.Equal(BranchErrors.NotFound, result.Error);
@@ -188,7 +188,7 @@ public class GetBranchByIdQueryHandlerTests
         var id = Guid.NewGuid();
         _branches.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(BranchTestData.Make(id, name: "Main"));
 
-        var result = await new GetBranchByIdQueryHandler(_branches)
+        var result = await new GetBranchByIdQueryHandler(_branches, NullLogger<GetBranchByIdQueryHandler>.Instance)
             .Handle(new GetBranchByIdQuery(id), default);
 
         Assert.True(result.IsSuccess);
@@ -206,7 +206,7 @@ public class GetAllBranchesQueryHandlerTests
         var paged = PagedResult<Branch>.Create(new List<Branch> { BranchTestData.Make() }, 1, 1, 20);
         _branches.GetPagedAsync(Arg.Any<PagedRequest>(), Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await new GetAllBranchesQueryHandler(_branches)
+        var result = await new GetAllBranchesQueryHandler(_branches, NullLogger<GetAllBranchesQueryHandler>.Instance)
             .Handle(new GetAllBranchesQuery(new PagedRequest()), default);
 
         Assert.True(result.IsSuccess);

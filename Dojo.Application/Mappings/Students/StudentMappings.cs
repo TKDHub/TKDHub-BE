@@ -25,6 +25,7 @@ public static class StudentMappings
             DateOfBirth          = student.DateOfBirth,
             Gender               = student.Gender.ToString(),
             StartDate            = student.StartDate,
+            EndDate              = student.EndDate,
             BeltLevel            = student.BeltLevel.ToString(),
             SubscriptionPlanId   = student.SubscriptionPlanId,
             SubscriptionPlanName = student.SubscriptionPlan?.Name ?? string.Empty,
@@ -33,7 +34,11 @@ public static class StudentMappings
             DurationMonths       = student.DurationMonths,
             ProfileImageUrl      = student.ProfileImageUrl,
             EmergencyContact     = student.EmergencyContact,
-            Status               = ((StudentStatusEnum)student.StatusId).ToString()
+            Status               = ((StudentStatusEnum)student.StatusId).ToString(),
+            FrozenOn             = student.FrozenOn,
+            FrozenByEmail        = student.FrozenByEmail,
+            FrozenByName         = student.FrozenByName,
+            RemainingDurationDays = student.RemainingDurationDays
         };
 
     public static Student ToEntity(this StudentModel model, Guid branchId, Guid tenantId)
@@ -48,6 +53,7 @@ public static class StudentMappings
             DateOfBirth        = model.DateOfBirth,
             Gender             = Enum.TryParse<GenderEnum>(model.Gender, ignoreCase: true, out var gender) ? gender : GenderEnum.Other,
             StartDate          = model.StartDate,
+            EndDate            = model.StartDate.AddMonths(model.DurationMonths),
             BeltLevel          = Enum.TryParse<BeltLevelEnum>(model.BeltLevel, ignoreCase: true, out var belt) ? belt : BeltLevelEnum.White,
             SubscriptionPlanId = model.SubscriptionPlanId,
             Price              = model.Price,
@@ -70,6 +76,9 @@ public static class StudentMappings
         student.DateOfBirth        = model.DateOfBirth;
         student.Gender             = Enum.TryParse<GenderEnum>(model.Gender, ignoreCase: true, out var gender) ? gender : student.Gender;
         student.StartDate          = model.StartDate;
+        // DurationMonths is frozen at registration (see below), so EndDate is re-derived from
+        // the student's existing duration, not the model's — which the client doesn't control here.
+        student.EndDate            = model.StartDate.AddMonths(student.DurationMonths);
         student.BeltLevel          = Enum.TryParse<BeltLevelEnum>(model.BeltLevel, ignoreCase: true, out var belt) ? belt : student.BeltLevel;
         student.SubscriptionPlanId = model.SubscriptionPlanId;
         // Only overwrite when a new image URL was supplied; null means "no change"

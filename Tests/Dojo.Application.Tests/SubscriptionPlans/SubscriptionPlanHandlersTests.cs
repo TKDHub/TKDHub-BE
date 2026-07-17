@@ -4,6 +4,7 @@ using Dojo.Application.Queries.SubscriptionPlans;
 using Dojo.Domain.Constants;
 using Dojo.Domain.Entities;
 using Dojo.Domain.Repositories;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Shared.Application.Contracts;
 using Shared.Application.Models;
@@ -40,7 +41,7 @@ public class CreateSubscriptionPlanCommandHandlerTests
     private readonly IBranchService _branchService = Substitute.For<IBranchService>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private CreateSubscriptionPlanCommandHandler CreateSut() => new(_plans, _branchService, _uow);
+    private CreateSubscriptionPlanCommandHandler CreateSut() => new(_plans, _branchService, _uow, NullLogger<CreateSubscriptionPlanCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenBranchIdEmpty_ReturnsBranchRequired()
@@ -135,7 +136,7 @@ public class UpdateSubscriptionPlanCommandHandlerTests
     private readonly IBranchService _branchService = Substitute.For<IBranchService>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private UpdateSubscriptionPlanCommandHandler CreateSut() => new(_plans, _branchService, _uow);
+    private UpdateSubscriptionPlanCommandHandler CreateSut() => new(_plans, _branchService, _uow, NullLogger<UpdateSubscriptionPlanCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenPlanIdNull_ReturnsNotFound()
@@ -204,7 +205,7 @@ public class ArchiveSubscriptionPlanCommandHandlerTests
     private readonly ISubscriptionPlanRepository _plans = Substitute.For<ISubscriptionPlanRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private ArchiveSubscriptionPlanCommandHandler CreateSut() => new(_plans, _uow);
+    private ArchiveSubscriptionPlanCommandHandler CreateSut() => new(_plans, _uow, NullLogger<ArchiveSubscriptionPlanCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenNotFound_ReturnsNotFound()
@@ -246,7 +247,7 @@ public class RestoreSubscriptionPlanCommandHandlerTests
     private readonly ISubscriptionPlanRepository _plans = Substitute.For<ISubscriptionPlanRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private RestoreSubscriptionPlanCommandHandler CreateSut() => new(_plans, _uow);
+    private RestoreSubscriptionPlanCommandHandler CreateSut() => new(_plans, _uow, NullLogger<RestoreSubscriptionPlanCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenNotFound_ReturnsNotFound()
@@ -293,7 +294,7 @@ public class SubscriptionPlanQueryHandlersTests
     {
         _plans.GetByIdWithStudentsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((SubscriptionPlan?)null);
 
-        var result = await new GetSubscriptionPlanByIdQueryHandler(_plans, _branchService)
+        var result = await new GetSubscriptionPlanByIdQueryHandler(_plans, _branchService, NullLogger<GetSubscriptionPlanByIdQueryHandler>.Instance)
             .Handle(new GetSubscriptionPlanByIdQuery(Guid.NewGuid()), default);
 
         Assert.Equal(SubscriptionPlanErrors.NotFound, result.Error);
@@ -307,7 +308,7 @@ public class SubscriptionPlanQueryHandlersTests
         _branchService.GetBranchAsync(plan.BranchId, Arg.Any<CancellationToken>())
             .Returns(new BranchInfo { Id = plan.BranchId, TenantId = plan.TenantId, Currency = "JOD", Enabled = true });
 
-        var result = await new GetSubscriptionPlanByIdQueryHandler(_plans, _branchService)
+        var result = await new GetSubscriptionPlanByIdQueryHandler(_plans, _branchService, NullLogger<GetSubscriptionPlanByIdQueryHandler>.Instance)
             .Handle(new GetSubscriptionPlanByIdQuery(plan.Id), default);
 
         Assert.True(result.IsSuccess);
@@ -327,7 +328,7 @@ public class SubscriptionPlanQueryHandlersTests
         var paged = PagedResult<SubscriptionPlan>.Create(new List<SubscriptionPlan> { PlanTestData.Make() }, 1, 1, 20);
         _plans.GetPagedAsync(Arg.Any<PagedRequest>(), null, Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await new GetAllSubscriptionPlansQueryHandler(_plans, branchContext, _branchService, userContext)
+        var result = await new GetAllSubscriptionPlansQueryHandler(_plans, branchContext, _branchService, userContext, NullLogger<GetAllSubscriptionPlansQueryHandler>.Instance)
             .Handle(new GetAllSubscriptionPlansQuery(new PagedRequest()), default);
 
         Assert.True(result.IsSuccess);
@@ -348,7 +349,7 @@ public class SubscriptionPlanQueryHandlersTests
         var paged = PagedResult<SubscriptionPlan>.Empty(1, 20);
         _plans.GetPagedAsync(Arg.Any<PagedRequest>(), branchId, Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await new GetAllSubscriptionPlansQueryHandler(_plans, branchContext, _branchService, userContext)
+        var result = await new GetAllSubscriptionPlansQueryHandler(_plans, branchContext, _branchService, userContext, NullLogger<GetAllSubscriptionPlansQueryHandler>.Instance)
             .Handle(new GetAllSubscriptionPlansQuery(new PagedRequest()), default);
 
         Assert.True(result.IsSuccess);

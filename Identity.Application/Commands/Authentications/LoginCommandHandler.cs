@@ -37,23 +37,28 @@ namespace Identity.Application.Commands.Authentications
         public async Task<Result<AuthDto>> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
             var identifier = request.model.Username.Trim();
+            _logger.LogInformation("Login: starting for username {Username}", identifier);
+
             var user = await _userRepository.GetByUsernameAsync(identifier, cancellationToken)
                        ?? await _userRepository.GetByEmailAsync(identifier, cancellationToken);
 
             if (user is null)
             {
+                _logger.LogInformation("Login: no user found for {Username}", identifier);
                 return Result.Failure<AuthDto>(UserErrors.InvalidCredentials);
             }
 
             // Check if account is active
             if (user.StatusId != (short)EntityStatusEnum.Active)
             {
+                _logger.LogInformation("Login: rejected — account {UserId} is not active", user.Id);
                 return Result.Failure<AuthDto>(UserErrors.AccountNotActive);
             }
 
             // Check if account is locked
             if (IsLockedOut(user))
             {
+                _logger.LogInformation("Login: rejected — account {UserId} is locked out until {LockoutEnd}", user.Id, user.LockoutEnd);
                 return Result.Failure<AuthDto>(UserErrors.AccountLockedOut);
             }
 
@@ -75,6 +80,7 @@ namespace Identity.Application.Commands.Authentications
             }
 
             // Generate tokens
+            _logger.LogInformation("Login: credentials verified for user {UserId}, generating tokens", user.Id);
             var authenticationResponse = _authenticationService.GenerateToken(user, tenant);
 
             // Update user

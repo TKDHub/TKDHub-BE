@@ -39,7 +39,7 @@ public class DeleteUserCommandHandlerTests
     private readonly IUserRepository _users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private DeleteUserCommandHandler CreateSut() => new(_users, _uow);
+    private DeleteUserCommandHandler CreateSut() => new(_users, _uow, NullLogger<DeleteUserCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsUserNotFound()
@@ -157,7 +157,7 @@ public class UpdateProfileCommandHandlerTests
     private readonly IUserRepository _users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private UpdateProfileCommandHandler CreateSut() => new(_users, _uow);
+    private UpdateProfileCommandHandler CreateSut() => new(_users, _uow, NullLogger<UpdateProfileCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenUsernameMissing_ReturnsUsernameRequired()
@@ -218,7 +218,7 @@ public class UserQueryHandlersTests
     {
         _users.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((User?)null);
 
-        var result = await new GetCurrentUserQueryHandler(_users)
+        var result = await new GetCurrentUserQueryHandler(_users, NullLogger<GetCurrentUserQueryHandler>.Instance)
             .Handle(new GetCurrentUserQuery(Guid.NewGuid()), default);
 
         Assert.Equal(UserErrors.UserNotFound, result.Error);
@@ -230,7 +230,7 @@ public class UserQueryHandlersTests
         var id = Guid.NewGuid();
         _users.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(UserTestData.Make(id, username: "jdoe"));
 
-        var result = await new GetCurrentUserQueryHandler(_users)
+        var result = await new GetCurrentUserQueryHandler(_users, NullLogger<GetCurrentUserQueryHandler>.Instance)
             .Handle(new GetCurrentUserQuery(id), default);
 
         Assert.True(result.IsSuccess);
@@ -242,7 +242,7 @@ public class UserQueryHandlersTests
     {
         _users.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((User?)null);
 
-        var result = await new GetUserByIdQueryHandler(_users)
+        var result = await new GetUserByIdQueryHandler(_users, NullLogger<GetUserByIdQueryHandler>.Instance)
             .Handle(new GetUserByIdQuery(Guid.NewGuid()), default);
 
         Assert.Equal(UserErrors.UserNotFound, result.Error);
@@ -254,7 +254,7 @@ public class UserQueryHandlersTests
         var id = Guid.NewGuid();
         _users.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(UserTestData.Make(id, username: "jdoe"));
 
-        var result = await new GetUserByIdQueryHandler(_users)
+        var result = await new GetUserByIdQueryHandler(_users, NullLogger<GetUserByIdQueryHandler>.Instance)
             .Handle(new GetUserByIdQuery(id), default);
 
         Assert.True(result.IsSuccess);
@@ -267,10 +267,50 @@ public class UserQueryHandlersTests
         var paged = PagedResult<User>.Create(new List<User> { UserTestData.Make() }, 1, 1, 20);
         _users.GetPagedAsync(Arg.Any<PagedRequest>(), Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await new GetAllUsersQueryHandler(_users)
+        var result = await new GetAllUsersQueryHandler(_users, NullLogger<GetAllUsersQueryHandler>.Instance)
             .Handle(new GetAllUsersQuery(new PagedRequest()), default);
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value.Items);
+    }
+}
+
+public class GetNotificationTargetsQueryHandlerTests
+{
+    private readonly IUserRepository _users = Substitute.For<IUserRepository>();
+
+    private GetNotificationTargetsQueryHandler CreateSut() => new(_users, NullLogger<GetNotificationTargetsQueryHandler>.Instance);
+
+    [Fact]
+    public async Task Handle_MapsSuperAdminAndAdminRolesCorrectly()
+    {
+        var tenantId = Guid.NewGuid();
+        var branchId = Guid.NewGuid();
+        var superAdmin = UserTestData.Make(username: "owner", roles: UserRoleEnum.SuberAdmin);
+        superAdmin.PhoneNumber = "0700000001";
+        var admin = UserTestData.Make(username: "branch-admin", roles: UserRoleEnum.Admin);
+        admin.PhoneNumber = "0700000002";
+        _users.GetAdminsAndSuperAdminsAsync(tenantId, branchId, Arg.Any<CancellationToken>())
+            .Returns([superAdmin, admin]);
+
+        var result = await CreateSut().Handle(new GetNotificationTargetsQuery(tenantId, branchId), default);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value.Count);
+        Assert.Equal("SuberAdmin", result.Value.Single(t => t.Name == "owner").Role);
+        Assert.Equal("Admin", result.Value.Single(t => t.Name == "branch-admin").Role);
+        Assert.Equal("0700000001", result.Value.Single(t => t.Name == "owner").PhoneNumber);
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoneFound_ReturnsEmptyList()
+    {
+        _users.GetAdminsAndSuperAdminsAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await CreateSut().Handle(new GetNotificationTargetsQuery(Guid.NewGuid(), Guid.NewGuid()), default);
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value);
     }
 }

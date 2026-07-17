@@ -2,6 +2,7 @@ using Dojo.Application.Queries.InvoicesSummary;
 using Dojo.Application.Tests.IncomeInvoices;
 using Dojo.Application.Tests.OutcomeInvoices;
 using Dojo.Domain.Repositories;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Shared.Application.Contracts;
 using Shared.Domain.Pagination;
@@ -16,7 +17,7 @@ public class GetInvoicesSummaryQueryHandlerTests
     private readonly IUserContext _userContext = Substitute.For<IUserContext>();
     private readonly IBranchContext _branchContext = Substitute.For<IBranchContext>();
 
-    private GetInvoicesSummaryQueryHandler CreateSut() => new(_income, _outcome, _userContext, _branchContext);
+    private GetInvoicesSummaryQueryHandler CreateSut() => new(_income, _outcome, _userContext, _branchContext, NullLogger<GetInvoicesSummaryQueryHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenSuperAdmin_QueriesBothRepositoriesAcrossAllBranches()

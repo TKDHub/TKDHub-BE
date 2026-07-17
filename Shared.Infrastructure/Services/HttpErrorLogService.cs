@@ -17,6 +17,7 @@ public sealed class HttpErrorLogService : IErrorLogService
 {
     private readonly IHttpClientFactory        _httpClientFactory;
     private readonly ErrorLogSettings          _settings;
+    private readonly RestKeySettings           _restKey;
     private readonly ILogger<HttpErrorLogService> _logger;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -27,10 +28,12 @@ public sealed class HttpErrorLogService : IErrorLogService
     public HttpErrorLogService(
         IHttpClientFactory httpClientFactory,
         IOptions<ErrorLogSettings> settings,
+        IOptions<RestKeySettings> restKey,
         ILogger<HttpErrorLogService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _settings          = settings.Value;
+        _restKey           = restKey.Value;
         _logger            = logger;
     }
 
@@ -39,8 +42,8 @@ public sealed class HttpErrorLogService : IErrorLogService
         try
         {
             var client = _httpClientFactory.CreateClient("ErrorLogClient");
-            client.DefaultRequestHeaders.Remove("X-Rest-Key");
-            client.DefaultRequestHeaders.Add("X-Rest-Key", _settings.ServiceKey);
+            client.DefaultRequestHeaders.Remove(_restKey.HeaderName);
+            client.DefaultRequestHeaders.Add(_restKey.HeaderName, _restKey.Key);
 
             var response = await client.PostAsJsonAsync(
                 $"{_settings.BaseUrl.TrimEnd('/')}/api/errorlogs",

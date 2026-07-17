@@ -31,18 +31,27 @@ namespace Identity.Application.Commands.Users
 
         public async Task<Result<UserProfileDto>> Handle(UpdateAccountCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("UpdateAccount: starting for user {UserId}", request.UserId);
+
             var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
             if (user is null)
+            {
+                _logger.LogInformation("UpdateAccount: user {UserId} not found", request.UserId);
                 return Result.Failure<UserProfileDto>(UserErrors.UserNotFound);
+            }
 
             if (!string.IsNullOrWhiteSpace(request.model.Email))
             {
                 var normalizedEmail = request.model.Email.Trim().ToLowerInvariant();
                 if (!normalizedEmail.Equals(user.Email, StringComparison.OrdinalIgnoreCase))
                 {
+                    _logger.LogInformation("UpdateAccount: email changed, checking uniqueness");
                     var emailTaken = await _userRepository.ExistsByEmailAsync(normalizedEmail, cancellationToken);
                     if (emailTaken)
+                    {
+                        _logger.LogInformation("UpdateAccount: rejected — email already registered");
                         return Result.Failure<UserProfileDto>(UserErrors.EmailAlreadyExists);
+                    }
 
                     user.Email = normalizedEmail;
                 }
@@ -69,7 +78,10 @@ namespace Identity.Application.Commands.Users
             user.ModifiedByEmail = request.model.ModifiedByEmail;
             user.ModifiedByName = request.model.ModifiedByName;
 
+            _logger.LogInformation("UpdateAccount: applying update to user {UserId}", user.Id);
             _userRepository.Update(user);
+
+            _logger.LogInformation("UpdateAccount: saving changes");
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Account {UserId} updated successfully", user.Id);

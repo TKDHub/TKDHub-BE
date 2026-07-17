@@ -40,9 +40,6 @@ services:
   - key: ErrorLogSettings__BaseUrl
     scope: RUN_AND_BUILD_TIME
     value: "https://tkdhub-identity-n3lku.ondigitalocean.app"
-  - key: ErrorLogSettings__ServiceKey
-    scope: RUN_AND_BUILD_TIME
-    type: SECRET
   - key: JwtSettings__Secret
     scope: RUN_AND_BUILD_TIME
     type: SECRET
@@ -53,6 +50,55 @@ services:
     scope: RUN_AND_BUILD_TIME
     value: "318563189243923"
   - key: CloudinarySettings__ApiSecret
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+  - key: WhatsAppSettings__PhoneNumberId
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+  - key: WhatsAppSettings__AccessToken
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+workers:
+- name: dojo-worker
+  image:
+    registry: tkdhub-registry
+    registry_type: DOCR
+    repository: dojo-worker
+    tag: latest
+  # Must stay at 1 — this runs the daily student-expiry sweep. More than one instance would
+  # fire the sweep once per replica and send duplicate WhatsApp notifications. Scale dojo-api
+  # independently; this component doesn't need to grow with API traffic.
+  instance_count: 1
+  instance_size_slug: apps-s-1vcpu-1gb
+  envs:
+  - key: ConnectionStrings__DojoDatabase
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+  - key: RestKeySettings__Key
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+  - key: RestKeySettings__HeaderName
+    scope: RUN_AND_BUILD_TIME
+    value: X-Rest-Key
+  - key: IdentityApiSettings__BaseUrl
+    scope: RUN_AND_BUILD_TIME
+    value: "https://tkdhub-identity-n3lku.ondigitalocean.app"
+  - key: ErrorLogSettings__BaseUrl
+    scope: RUN_AND_BUILD_TIME
+    value: "https://tkdhub-identity-n3lku.ondigitalocean.app"
+  - key: CloudinarySettings__CloudName
+    scope: RUN_AND_BUILD_TIME
+    value: "dlrjvaexg"
+  - key: CloudinarySettings__ApiKey
+    scope: RUN_AND_BUILD_TIME
+    value: "318563189243923"
+  - key: CloudinarySettings__ApiSecret
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+  - key: WhatsAppSettings__PhoneNumberId
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+  - key: WhatsAppSettings__AccessToken
     scope: RUN_AND_BUILD_TIME
     type: SECRET
 ingress:

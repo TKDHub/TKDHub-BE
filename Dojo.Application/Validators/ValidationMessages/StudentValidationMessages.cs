@@ -22,4 +22,5 @@ public static class StudentValidationMessages
     public const string DurationInvalid      = "Duration must be at least 1 month.";
     public const string EmergencyMaxLength   = "Emergency contact must not exceed 200 characters.";
     public const string ImageUrlMaxLength    = "Profile image URL must not exceed 500 characters.";
+    public const string StudentIdRequired    = "Student ID is required.";
 }

@@ -1,7 +1,7 @@
 using FluentValidation.TestHelper;
 using Identity.Application.Models.Auth;
 using Identity.Application.Validators.Auth;
-using Identity.Domain.Enums;
+using Shared.Domain.Enums;
 
 namespace Identity.Application.Tests.Validators;
 

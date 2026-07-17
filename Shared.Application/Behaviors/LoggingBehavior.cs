@@ -39,7 +39,10 @@ public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
         }
         else
         {
-            _logger.LogError(
+            // A Result.Failure here is an expected business outcome (not found, validation,
+            // conflict, etc.), not a bug — Warning, not Error. Unhandled exceptions are a
+            // separate case already logged at Error by ExceptionHandlingMiddleware.
+            _logger.LogWarning(
                 "Request {RequestName} failed with error: {Error}",
                 requestName,
                 result.Error);

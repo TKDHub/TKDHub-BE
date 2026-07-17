@@ -5,6 +5,7 @@ using Dojo.Domain.Constants;
 using Dojo.Domain.Entities;
 using Dojo.Domain.Enums;
 using Dojo.Domain.Repositories;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Shared.Application.Contracts;
 using Shared.Application.Models;
@@ -33,20 +34,27 @@ internal static class InvoiceTestData
     };
 
     public static IncomeInvoice MakeInvoice(Guid? id = null, Guid? branchId = null, decimal originalPrice = 100m,
-        IncomeInvoiceStatusEnum status = IncomeInvoiceStatusEnum.Open) => new()
+        IncomeInvoiceStatusEnum status = IncomeInvoiceStatusEnum.Open,
+        IncomeInvoiceTypeEnum type = IncomeInvoiceTypeEnum.Subscription, Student? student = null)
     {
-        Id = id ?? Guid.NewGuid(),
-        BranchId = branchId ?? Guid.NewGuid(),
-        StudentId = Guid.NewGuid(),
-        Type = IncomeInvoiceTypeEnum.Subscription,
-        OriginalPrice = originalPrice,
-        Currency = "JOD",
-        Status = status,
-        CreatedOn = DateTimeOffset.UtcNow,
-        CreatedByEmail = "a@a.test",
-        CreatedByName = "A",
-        StatusId = 1
-    };
+        var resolvedBranchId = branchId ?? Guid.NewGuid();
+        var resolvedStudent = student ?? MakeStudent(branchId: resolvedBranchId);
+        return new()
+        {
+            Id = id ?? Guid.NewGuid(),
+            BranchId = resolvedBranchId,
+            StudentId = resolvedStudent.Id,
+            Student = resolvedStudent,
+            Type = type,
+            OriginalPrice = originalPrice,
+            Currency = "JOD",
+            Status = status,
+            CreatedOn = DateTimeOffset.UtcNow,
+            CreatedByEmail = "a@a.test",
+            CreatedByName = "A",
+            StatusId = 1
+        };
+    }
 
     public static IncomeTransaction MakePaidTransaction(IncomeInvoice invoice, decimal amount) => new()
     {
@@ -79,7 +87,7 @@ public class CreateIncomeInvoiceCommandHandlerTests
     private readonly IBranchService _branchService = Substitute.For<IBranchService>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private CreateIncomeInvoiceCommandHandler CreateSut() => new(_invoices, _students, _branchService, _uow);
+    private CreateIncomeInvoiceCommandHandler CreateSut() => new(_invoices, _students, _branchService, _uow, NullLogger<CreateIncomeInvoiceCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenStudentIdEmpty_ReturnsStudentRequired()
@@ -228,7 +236,7 @@ public class AddIncomeTransactionCommandHandlerTests
     private readonly IIncomeInvoiceRepository _invoices = Substitute.For<IIncomeInvoiceRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private AddIncomeTransactionCommandHandler CreateSut() => new(_invoices, _uow);
+    private AddIncomeTransactionCommandHandler CreateSut() => new(_invoices, _uow, NullLogger<AddIncomeTransactionCommandHandler>.Instance);
 
     private static AddIncomeTransactionModel Model(Guid invoiceId, decimal amount) =>
         new() { IncomeInvoiceId = invoiceId, Amount = amount, Method = PaymentMethodEnum.Cash };
@@ -317,9 +325,10 @@ public class AddIncomeTransactionCommandHandlerTests
 public class VoidIncomeInvoiceCommandHandlerTests
 {
     private readonly IIncomeInvoiceRepository _invoices = Substitute.For<IIncomeInvoiceRepository>();
+    private readonly IStudentRepository _students = Substitute.For<IStudentRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private VoidIncomeInvoiceCommandHandler CreateSut() => new(_invoices, _uow);
+    private VoidIncomeInvoiceCommandHandler CreateSut() => new(_invoices, _students, _uow, NullLogger<VoidIncomeInvoiceCommandHandler>.Instance);
 
     private static VoidIncomeInvoiceModel Model(Guid invoiceId) =>
         new() { InvoiceId = invoiceId, Reason = "requested by student", VoidedByEmail = "a@a.test", VoidedByName = "A" };
@@ -406,6 +415,35 @@ public class VoidIncomeInvoiceCommandHandlerTests
         var newRefund = invoice.Transactions.Single(t => t.Status == IncomeTransactionStatusEnum.Refund && t.Amount == 70);
         Assert.Equal(paid.Id, newRefund.RefundOfTransactionId);
     }
+
+    [Fact]
+    public async Task Handle_WhenSubscriptionInvoice_MarksStudentInactive()
+    {
+        var invoice = InvoiceTestData.MakeInvoice(type: IncomeInvoiceTypeEnum.Subscription);
+        _invoices.GetByIdAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
+
+        var result = await CreateSut().Handle(new VoidIncomeInvoiceCommand(Model(invoice.Id)), default);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal((short)StudentStatusEnum.Inactive, invoice.Student.StatusId);
+        _students.Received(1).Update(invoice.Student);
+    }
+
+    [Theory]
+    [InlineData(IncomeInvoiceTypeEnum.Exam)]
+    [InlineData(IncomeInvoiceTypeEnum.Kit)]
+    public async Task Handle_WhenNonSubscriptionInvoice_DoesNotTouchStudentStatus(IncomeInvoiceTypeEnum type)
+    {
+        var invoice = InvoiceTestData.MakeInvoice(type: type);
+        var originalStatus = invoice.Student.StatusId;
+        _invoices.GetByIdAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
+
+        var result = await CreateSut().Handle(new VoidIncomeInvoiceCommand(Model(invoice.Id)), default);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(originalStatus, invoice.Student.StatusId);
+        _students.DidNotReceive().Update(Arg.Any<Student>());
+    }
 }
 
 public class RefundIncomeTransactionCommandHandlerTests
@@ -413,7 +451,7 @@ public class RefundIncomeTransactionCommandHandlerTests
     private readonly IIncomeInvoiceRepository _invoices = Substitute.For<IIncomeInvoiceRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private RefundIncomeTransactionCommandHandler CreateSut() => new(_invoices, _uow);
+    private RefundIncomeTransactionCommandHandler CreateSut() => new(_invoices, _uow, NullLogger<RefundIncomeTransactionCommandHandler>.Instance);
 
     private static RefundIncomeTransactionModel Model(Guid invoiceId, Guid txnId, decimal amount) => new()
     {
@@ -564,7 +602,7 @@ public class IncomeInvoiceQueryHandlersTests
     {
         _invoices.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((IncomeInvoice?)null);
 
-        var result = await new GetIncomeInvoiceByIdQueryHandler(_invoices)
+        var result = await new GetIncomeInvoiceByIdQueryHandler(_invoices, NullLogger<GetIncomeInvoiceByIdQueryHandler>.Instance)
             .Handle(new GetIncomeInvoiceByIdQuery(Guid.NewGuid()), default);
 
         Assert.Equal(IncomeInvoiceErrors.NotFound, result.Error);
@@ -576,7 +614,7 @@ public class IncomeInvoiceQueryHandlersTests
         var invoice = InvoiceTestData.MakeInvoice();
         _invoices.GetByIdAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
 
-        var result = await new GetIncomeInvoiceByIdQueryHandler(_invoices)
+        var result = await new GetIncomeInvoiceByIdQueryHandler(_invoices, NullLogger<GetIncomeInvoiceByIdQueryHandler>.Instance)
             .Handle(new GetIncomeInvoiceByIdQuery(invoice.Id), default);
 
         Assert.True(result.IsSuccess);
@@ -592,7 +630,7 @@ public class IncomeInvoiceQueryHandlersTests
         var paged = PagedResult<IncomeInvoice>.Create(new List<IncomeInvoice> { InvoiceTestData.MakeInvoice() }, 1, 1, 20);
         _invoices.GetPagedAsync(Arg.Any<PagedRequest>(), null, Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await new GetAllIncomeInvoicesQueryHandler(_invoices, userContext, branchContext)
+        var result = await new GetAllIncomeInvoicesQueryHandler(_invoices, userContext, branchContext, NullLogger<GetAllIncomeInvoicesQueryHandler>.Instance)
             .Handle(new GetAllIncomeInvoicesQuery(new PagedRequest()), default);
 
         Assert.True(result.IsSuccess);

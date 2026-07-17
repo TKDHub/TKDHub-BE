@@ -5,11 +5,11 @@ using Identity.Application.Services;
 using Identity.Application.Validators.Tenant;
 using Identity.Infrastructure;
 using Identity.Infrastructure.Persistence;
-using Identity.API.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Shared.Infrastructure;
 using Shared.Infrastructure.Extensions;
+using Shared.Infrastructure.Settings;
 
 namespace Identity.API.Extensions
 {

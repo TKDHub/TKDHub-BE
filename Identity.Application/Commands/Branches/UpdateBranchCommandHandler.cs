@@ -26,15 +26,26 @@ internal sealed class UpdateBranchCommandHandler : ICommandHandler<UpdateBranchC
 
     public async Task<Result<BranchDto>> Handle(UpdateBranchCommand request, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("UpdateBranch: starting for branch {BranchId}", request.Model.BranchId);
+
         if (string.IsNullOrWhiteSpace(request.Model.Name))
+        {
+            _logger.LogInformation("UpdateBranch: rejected — name missing");
             return Result.Failure<BranchDto>(BranchErrors.NameRequired);
+        }
 
         if (string.IsNullOrWhiteSpace(request.Model.Email))
+        {
+            _logger.LogInformation("UpdateBranch: rejected — email missing");
             return Result.Failure<BranchDto>(BranchErrors.EmailRequired);
+        }
 
         var branch = await _branchRepository.GetByIdIgnoringFiltersAsync(request.Model.BranchId!.Value, cancellationToken);
         if (branch is null)
+        {
+            _logger.LogInformation("UpdateBranch: branch {BranchId} not found", request.Model.BranchId);
             return Result.Failure<BranchDto>(BranchErrors.NotFound);
+        }
 
         var newName = request.Model.Name.Trim();
         if (!string.Equals(branch.Name, newName, StringComparison.OrdinalIgnoreCase))
@@ -49,7 +60,10 @@ internal sealed class UpdateBranchCommandHandler : ICommandHandler<UpdateBranchC
 
         branch.ApplyUpdate(request.Model);
 
+        _logger.LogInformation("UpdateBranch: applying update to branch {BranchId}", branch.Id);
         _branchRepository.Update(branch);
+
+        _logger.LogInformation("UpdateBranch: saving changes");
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Branch {BranchId} updated successfully", branch.Id);

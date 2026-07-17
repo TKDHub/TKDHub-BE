@@ -19,8 +19,21 @@ public sealed class Student : AuditableEntity<Guid>, IHasBranch
 
     // ── Membership ───────────────────────────────────────────────
     [Searchable] public DateOnly          StartDate          { get; set; }
+    [Searchable] public DateOnly          EndDate            { get; set; }
     [Searchable] public BeltLevelEnum     BeltLevel          { get; set; }
     [Searchable] public Guid              SubscriptionPlanId { get; set; }
+
+    // ── Class enrollment ────────────────────────────────────────────
+    // A student belongs to at most one class at a time.
+    [Searchable] public Guid? ClassId { get; set; }
+
+    // ── Freeze audit (set only while Status == Frozen) ────────────
+    // RemainingDurationDays snapshots how many days were left until EndDate at the moment of
+    // freezing — the clock is paused there, ready to resume from wherever the student left off.
+    public DateOnly? FrozenOn              { get; set; }
+    public string?   FrozenByEmail         { get; set; }
+    public string?   FrozenByName          { get; set; }
+    public int?      RemainingDurationDays { get; set; }
 
     // ── Snapshot (frozen at registration) ────────────────────────
     [Searchable] public decimal Price          { get; set; }
@@ -37,4 +50,5 @@ public sealed class Student : AuditableEntity<Guid>, IHasBranch
 
     // ── Relations ─────────────────────────────────────────────────
     public SubscriptionPlan  SubscriptionPlan   { get; set; } = null!;
+    public Class?             Class              { get; set; }
 }

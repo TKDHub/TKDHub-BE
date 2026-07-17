@@ -39,15 +39,50 @@ namespace Shared.Infrastructure.Extensions
         /// <summary>
         /// Registers <see cref="HttpErrorLogService"/> as the <see cref="IErrorLogService"/>
         /// implementation for all services. Configure <c>ErrorLogSettings</c> in appsettings
-        /// with the Identity base URL and shared service key.
+        /// with the Identity base URL; authenticates with the shared <c>RestKeySettings</c> key.
         /// </summary>
         public static IServiceCollection AddHttpErrorLogService(
             this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<ErrorLogSettings>(
                 configuration.GetSection(ErrorLogSettings.SectionName));
+            services.Configure<RestKeySettings>(
+                configuration.GetSection(RestKeySettings.SectionName));
             services.AddHttpClient("ErrorLogClient");
             services.AddScoped<IErrorLogService, HttpErrorLogService>();
+            return services;
+        }
+
+        /// <summary>
+        /// Registers <see cref="WhatsAppCloudApiService"/> as the <see cref="IWhatsAppService"/>
+        /// implementation. Configure <c>WhatsAppSettings</c> in appsettings with the Meta
+        /// WhatsApp Cloud API phone number ID and access token. Sends are silently skipped
+        /// (logged) while unconfigured, so this is safe to register everywhere.
+        /// </summary>
+        public static IServiceCollection AddWhatsAppNotifications(
+            this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<WhatsAppSettings>(
+                configuration.GetSection(WhatsAppSettings.SectionName));
+            services.AddHttpClient("WhatsAppApi");
+            services.AddScoped<IWhatsAppService, WhatsAppCloudApiService>();
+            return services;
+        }
+
+        /// <summary>
+        /// Registers <see cref="EmailService"/> (SMTP) and <see cref="OtpService"/> as the
+        /// <see cref="IEmailService"/>/<see cref="IOtpService"/> implementations. OtpService's
+        /// phone-number path sends via <see cref="IWhatsAppService"/>, so call
+        /// <see cref="AddWhatsAppNotifications"/> alongside this. Configure <c>SmtpSettings</c>
+        /// in appsettings for the mail server.
+        /// </summary>
+        public static IServiceCollection AddEmailAndOtpNotifications(
+            this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<SmtpSettings>(
+                configuration.GetSection(SmtpSettings.SectionName));
+            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IOtpService, OtpService>();
             return services;
         }
 

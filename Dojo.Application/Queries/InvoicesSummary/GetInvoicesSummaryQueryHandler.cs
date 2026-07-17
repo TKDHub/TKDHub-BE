@@ -2,6 +2,7 @@ using Dojo.Application.Dtos.InvoicesSummary;
 using Dojo.Application.Mappings.IncomeInvoices;
 using Dojo.Application.Mappings.OutcomeInvoices;
 using Dojo.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 using Shared.Application.Contracts;
 using Shared.Application.Messaging;
 using Shared.Domain.Pagination;
@@ -25,26 +26,32 @@ internal sealed class GetInvoicesSummaryQueryHandler : IQueryHandler<GetInvoices
     private readonly IOutcomeInvoiceRepository _outcomeRepository;
     private readonly IUserContext              _userContext;
     private readonly IBranchContext            _branchContext;
+    private readonly ILogger<GetInvoicesSummaryQueryHandler> _logger;
 
     public GetInvoicesSummaryQueryHandler(
         IIncomeInvoiceRepository incomeRepository,
         IOutcomeInvoiceRepository outcomeRepository,
         IUserContext userContext,
-        IBranchContext branchContext)
+        IBranchContext branchContext,
+        ILogger<GetInvoicesSummaryQueryHandler> logger)
     {
         _incomeRepository  = incomeRepository;
         _outcomeRepository = outcomeRepository;
         _userContext       = userContext;
         _branchContext     = branchContext;
+        _logger             = logger;
     }
 
     public async Task<Result<InvoicesSummaryDto>> Handle(GetInvoicesSummaryQuery request, CancellationToken cancellationToken)
     {
         var branchId = _userContext.IsSuperAdmin ? (Guid?)null : _branchContext.BranchId;
+        _logger.LogInformation("GetInvoicesSummary: starting, branch scope {BranchId}", branchId);
 
+        _logger.LogInformation("GetInvoicesSummary: computing total net income");
         var totalIncome  = await _incomeRepository.GetTotalNetPaidAsync(request.Request, branchId, cancellationToken);
         var incomePage   = await _incomeRepository.GetPagedAsync(request.Request, branchId, cancellationToken);
 
+        _logger.LogInformation("GetInvoicesSummary: computing total active outcome");
         var totalOutcome = await _outcomeRepository.GetTotalActiveAmountAsync(request.Request, branchId, cancellationToken);
         var outcomePage  = await _outcomeRepository.GetPagedAsync(request.Request, branchId, cancellationToken);
 
@@ -65,6 +72,8 @@ internal sealed class GetInvoicesSummaryQueryHandler : IQueryHandler<GetInvoices
                 outcomePage.Items.ToListDtos(), outcomePage.TotalCount, outcomePage.Page, outcomePage.PageSize)
         };
 
+        _logger.LogInformation("GetInvoicesSummary: succeeded — total income {TotalIncome} {IncomeCurrency}, total outcome {TotalOutcome} {OutcomeCurrency}",
+            totalIncome, incomeCurrency, totalOutcome, outcomeCurrency);
         return Result.Success(dto);
     }
 }

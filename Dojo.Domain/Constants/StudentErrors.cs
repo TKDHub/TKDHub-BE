@@ -19,4 +19,6 @@ public static class StudentErrors
     public static readonly Error ImageEmpty            = new("Student.ImageEmpty",             "Image file is empty.");
     public static readonly Error ImageTooLarge         = new("Student.ImageTooLarge",          "Image exceeds the 10 MB limit.");
     public static readonly Error ImageInvalidType      = new("Student.ImageInvalidType",       "Only JPEG, PNG, and WebP images are accepted.");
+    public static readonly Error AlreadyFrozen         = new("Student.AlreadyFrozen",          "Student is already frozen.");
+    public static readonly Error AlreadyActive         = new("Student.AlreadyActive",          "Student is already active.");
 }

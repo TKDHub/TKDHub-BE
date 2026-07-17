@@ -26,15 +26,26 @@ namespace Identity.Application.Commands.Tenants
 
         public async Task<Result<TenantDto>> Handle(UpdateTenantCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("UpdateTenant: starting for tenant {TenantId}", request.model.TenantId);
+
             if (string.IsNullOrWhiteSpace(request.model.Name))
+            {
+                _logger.LogInformation("UpdateTenant: rejected — name missing");
                 return Result.Failure<TenantDto>(TenantErrors.NameRequired);
+            }
 
             if (string.IsNullOrWhiteSpace(request.model.ContactEmail))
+            {
+                _logger.LogInformation("UpdateTenant: rejected — contact email missing");
                 return Result.Failure<TenantDto>(TenantErrors.EmailRequired);
+            }
 
             var tenant = await _tenantRepository.GetByIdIgnoringFiltersAsync(request.model.TenantId, cancellationToken);
             if (tenant is null)
+            {
+                _logger.LogInformation("UpdateTenant: tenant {TenantId} not found", request.model.TenantId);
                 return Result.Failure<TenantDto>(TenantErrors.NotFound);
+            }
 
             // Check for subdomain conflict only if subdomain is being changed
             var normalizedSubdomain = request.model.Subdomain.Trim().ToLowerInvariant();
@@ -54,7 +65,10 @@ namespace Identity.Application.Commands.Tenants
             tenant.ContactEmail = request.model.ContactEmail.Trim().ToLowerInvariant();
             tenant.ModifiedOn = DateTimeOffset.UtcNow;
 
+            _logger.LogInformation("UpdateTenant: applying update to tenant {TenantId}", tenant.Id);
             _tenantRepository.Update(tenant);
+
+            _logger.LogInformation("UpdateTenant: saving changes");
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Tenant {TenantId} updated successfully", tenant.Id);

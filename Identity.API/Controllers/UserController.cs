@@ -183,5 +183,29 @@ namespace Identity.API.Controllers
 
             return Ok(new { message = UserMessages.LoggedOutSuccessfully });
         }
+
+        /// <summary>
+        /// Returns the SuperAdmins (tenant-wide) and Admins (branch-scoped) to notify for a
+        /// given tenant/branch. System-to-system only — authenticated via the shared
+        /// <c>X-Rest-Key</c> header, not a user JWT (callers are background jobs with no user
+        /// session of their own).
+        /// </summary>
+        [HttpGet("notification-targets")]
+        [AllowAnonymous]
+        [RequireRestKey]
+        [ProducesResponseType(typeof(List<NotificationTargetDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetNotificationTargets(
+            [FromQuery] Guid tenantId,
+            [FromQuery] Guid branchId,
+            CancellationToken cancellationToken)
+        {
+            var result = await sender.Send(new GetNotificationTargetsQuery(tenantId, branchId), cancellationToken);
+
+            if (result.IsFailure)
+                return BadRequest(new { error = result.Error.Description });
+
+            return Ok(result.Value);
+        }
     }
 }

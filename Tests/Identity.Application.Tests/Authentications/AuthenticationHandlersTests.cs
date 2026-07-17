@@ -8,6 +8,8 @@ using Identity.Domain.Enums;
 using Identity.Domain.Repositories;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Shared.Application.Contracts;
+using Shared.Domain.Constants;
 using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
 using Shared.Domain.Repositories;
@@ -361,7 +363,7 @@ public class LogoutCommandHandlerTests
     private readonly IUserRepository _users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private LogoutCommandHandler CreateSut() => new(_users, _uow);
+    private LogoutCommandHandler CreateSut() => new(_users, _uow, NullLogger<LogoutCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsUserNotFound()

@@ -31,11 +31,19 @@ namespace Identity.Application.Commands.Authentications
 
         public async Task<Result<string>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("ResetPassword: starting");
+
             if (string.IsNullOrWhiteSpace(request.model.NewPassword))
+            {
+                _logger.LogInformation("ResetPassword: rejected — new password missing");
                 return Result.Failure<string>(UserErrors.PasswordRequired);
+            }
 
             if (request.model.NewPassword != request.model.ConfirmPassword)
+            {
+                _logger.LogInformation("ResetPassword: rejected — password confirmation mismatch");
                 return Result.Failure<string>(UserErrors.PasswordMismatch);
+            }
 
             var identifier = request.model.Identifier.Trim();
 
@@ -43,7 +51,10 @@ namespace Identity.Application.Commands.Authentications
                     ?? await _userRepository.GetByPhoneAsync(identifier, cancellationToken);
 
             if (user is null)
+            {
+                _logger.LogInformation("ResetPassword: no user found for identifier");
                 return Result.Failure<string>(UserErrors.UserNotFound);
+            }
 
             // PasswordResetToken must be a UUID (swapped in after OTP verification) and not expired
             if (user.PasswordResetToken is null
@@ -51,6 +62,7 @@ namespace Identity.Application.Commands.Authentications
                 || user.PasswordResetTokenExpiryTime is null
                 || user.PasswordResetTokenExpiryTime < DateTime.UtcNow)
             {
+                _logger.LogInformation("ResetPassword: rejected — user {UserId} has not completed OTP verification", user.Id);
                 return Result.Failure<string>(OtpErrors.NotVerified);
             }
 
@@ -62,6 +74,8 @@ namespace Identity.Application.Commands.Authentications
             user.ModifiedOn                   = DateTimeOffset.UtcNow;
 
             _userRepository.Update(user);
+
+            _logger.LogInformation("ResetPassword: saving changes for user {UserId}", user.Id);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Password reset successfully for {Identifier}", identifier);

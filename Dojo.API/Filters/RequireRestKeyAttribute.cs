@@ -1,8 +1,8 @@
-using Dojo.API.Settings;
 using Dojo.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
+using Shared.Infrastructure.Settings;
 
 namespace Dojo.API.Filters
 {

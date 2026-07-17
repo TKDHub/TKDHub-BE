@@ -104,6 +104,22 @@ internal sealed class UserRepository : IUserRepository
             .ToListAsync(cancellationToken);
     }
 
+    // IgnoreQueryFilters: called by system-to-system background jobs with no HTTP/tenant
+    // context of their own, so tenantId is an explicit parameter instead of relying on the
+    // ambient global query filter (which would resolve to Guid.Empty and match nothing).
+    public async Task<List<User>> GetAdminsAndSuperAdminsAsync(Guid tenantId, Guid branchId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.UserRoles)
+            .Include(u => u.Branches)
+            .Where(u => u.StatusId == (short)EntityStatusEnum.Active
+                     && u.TenantId == tenantId
+                     && (u.UserRoles.Any(r => r.RoleId == UserRoleEnum.SuberAdmin)
+                         || (u.UserRoles.Any(r => r.RoleId == UserRoleEnum.Admin) && u.Branches.Any(b => b.Id == branchId))))
+            .ToListAsync(cancellationToken);
+    }
+
     public void Add(User user)
     {
         _dbContext.Users.Add(user);

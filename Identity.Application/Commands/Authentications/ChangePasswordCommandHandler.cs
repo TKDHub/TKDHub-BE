@@ -28,10 +28,15 @@ namespace Identity.Application.Commands.Authentications
 
         public async Task<Result> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("ChangePassword: starting for user {UserId}", request.model.UserId);
+
             var user = await _userRepository.GetByIdAsync(request.model.UserId, cancellationToken);
 
             if (user is null)
+            {
+                _logger.LogInformation("ChangePassword: user {UserId} not found", request.model.UserId);
                 return Result.Failure(UserErrors.UserNotFound);
+            }
 
             // Verify current password
             if (!_passwordHasher.VerifyPassword(request.model.OldPassword, user.PasswordHash))

@@ -22,6 +22,65 @@ namespace Dojo.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Dojo.Domain.Entities.Class", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CreatedByEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<string>("ModifiedByEmail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ModifiedByName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("ModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<short>("StatusId")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int[]>("Weekdays")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "BranchId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Classes_TenantId_BranchId_Name");
+
+                    b.ToTable("Classes", (string)null);
+                });
+
             modelBuilder.Entity("Dojo.Domain.Entities.IncomeInvoice", b =>
                 {
                     b.Property<Guid>("Id")
@@ -257,6 +316,9 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ClassId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("CreatedByEmail")
                         .IsRequired()
                         .HasColumnType("text");
@@ -287,10 +349,24 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<string>("FrozenByEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("FrozenByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateOnly?>("FrozenOn")
+                        .HasColumnType("date");
 
                     b.Property<short>("Gender")
                         .HasColumnType("smallint");
@@ -321,6 +397,9 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<int?>("RemainingDurationDays")
+                        .HasColumnType("integer");
+
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
 
@@ -335,6 +414,9 @@ namespace Dojo.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClassId")
+                        .HasDatabaseName("IX_Students_ClassId");
+
                     b.HasIndex("SubscriptionPlanId");
 
                     b.HasIndex("TenantId", "Email")
@@ -343,6 +425,60 @@ namespace Dojo.Infrastructure.Persistence.Migrations
                         .HasFilter("\"Email\" IS NOT NULL");
 
                     b.ToTable("Students", (string)null);
+                });
+
+            modelBuilder.Entity("Dojo.Domain.Entities.StudentActivityLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<short>("ActivityType")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CreatedByEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("ModifiedByEmail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ModifiedByName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("ModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<short>("StatusId")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId", "CreatedOn")
+                        .HasDatabaseName("IX_StudentActivityLogs_StudentId_CreatedOn");
+
+                    b.ToTable("StudentActivityLogs", (string)null);
                 });
 
             modelBuilder.Entity("Dojo.Domain.Entities.SubscriptionPlan", b =>
@@ -428,13 +564,36 @@ namespace Dojo.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Dojo.Domain.Entities.Student", b =>
                 {
+                    b.HasOne("Dojo.Domain.Entities.Class", "Class")
+                        .WithMany("Students")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Dojo.Domain.Entities.SubscriptionPlan", "SubscriptionPlan")
                         .WithMany("Students")
                         .HasForeignKey("SubscriptionPlanId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Class");
+
                     b.Navigation("SubscriptionPlan");
+                });
+
+            modelBuilder.Entity("Dojo.Domain.Entities.StudentActivityLog", b =>
+                {
+                    b.HasOne("Dojo.Domain.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("Dojo.Domain.Entities.Class", b =>
+                {
+                    b.Navigation("Students");
                 });
 
             modelBuilder.Entity("Dojo.Domain.Entities.IncomeInvoice", b =>

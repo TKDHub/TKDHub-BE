@@ -15,6 +15,7 @@ namespace Identity.Domain.Repositories
         Task<Entities.User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
         Task<List<Entities.User>> GetByRoleAsync(string role, CancellationToken cancellationToken = default);
         Task<List<Entities.User>> GetByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken = default);
+        Task<List<Entities.User>> GetAdminsAndSuperAdminsAsync(Guid tenantId, Guid branchId, CancellationToken cancellationToken = default);
         void Add(Entities.User user);
         void Update(Entities.User user);
         void Remove(Entities.User user);

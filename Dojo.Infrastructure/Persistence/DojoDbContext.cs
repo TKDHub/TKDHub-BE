@@ -18,6 +18,8 @@ public sealed class DojoDbContext : BaseDbContext
     public DbSet<IncomeInvoice>      IncomeInvoices      { get; set; }
     public DbSet<IncomeTransaction>  IncomeTransactions  { get; set; }
     public DbSet<OutcomeInvoice>     OutcomeInvoices     { get; set; }
+    public DbSet<Class>              Classes             { get; set; }
+    public DbSet<StudentActivityLog> StudentActivityLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

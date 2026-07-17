@@ -46,6 +46,20 @@ jobs:
           docker push registry.digitalocean.com/tkdhub-registry/dojo-api:${{ github.run_number }}
           docker push registry.digitalocean.com/tkdhub-registry/dojo-api:latest
 
+      # ── Dojo Worker (student-expiry sweep, single instance) ────────────────
+      - name: Build Dojo Worker image
+        run: |
+          docker build \
+            -f Dojo.Worker/Dockerfile \
+            -t registry.digitalocean.com/tkdhub-registry/dojo-worker:${{ github.run_number }} \
+            -t registry.digitalocean.com/tkdhub-registry/dojo-worker:latest \
+            .
+
+      - name: Push Dojo Worker image
+        run: |
+          docker push registry.digitalocean.com/tkdhub-registry/dojo-worker:${{ github.run_number }}
+          docker push registry.digitalocean.com/tkdhub-registry/dojo-worker:latest
+
   deploy:
     name: Deploy to App Platform
     runs-on: ubuntu-latest

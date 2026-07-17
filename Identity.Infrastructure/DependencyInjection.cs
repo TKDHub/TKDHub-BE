@@ -1,9 +1,6 @@
-using Identity.Application.Contracts;
 using Identity.Domain.Repositories;
 using Identity.Infrastructure.Persistence;
 using Identity.Infrastructure.Persistence.Repositories;
-using Identity.Infrastructure.Services;
-using Identity.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,11 +34,11 @@ namespace Identity.Infrastructure
             // Centralised error logging — Identity self-posts to its own /api/errorlogs
             services.AddHttpErrorLogService(configuration);
 
-            services.AddScoped<IEmailService, EmailService>();
-            services.AddScoped<IOtpService, OtpService>();
+            // Email + OTP (OtpService's phone path sends via WhatsApp)
+            services.AddEmailAndOtpNotifications(configuration);
+            services.AddWhatsAppNotifications(configuration);
 
             // Settings
-            services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
             return services;

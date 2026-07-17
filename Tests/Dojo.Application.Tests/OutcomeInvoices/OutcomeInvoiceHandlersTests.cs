@@ -4,6 +4,7 @@ using Dojo.Application.Queries.OutcomeInvoices;
 using Dojo.Domain.Constants;
 using Dojo.Domain.Entities;
 using Dojo.Domain.Repositories;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Shared.Application.Contracts;
 using Shared.Application.Models;
@@ -38,7 +39,7 @@ public class CreateOutcomeInvoiceCommandHandlerTests
     private readonly IBranchService _branchService = Substitute.For<IBranchService>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private CreateOutcomeInvoiceCommandHandler CreateSut() => new(_invoices, _branchService, _uow);
+    private CreateOutcomeInvoiceCommandHandler CreateSut() => new(_invoices, _branchService, _uow, NullLogger<CreateOutcomeInvoiceCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenBranchIdEmpty_ReturnsBranchRequired()
@@ -114,7 +115,7 @@ public class DeleteOutcomeInvoiceCommandHandlerTests
     private readonly IOutcomeInvoiceRepository _invoices = Substitute.For<IOutcomeInvoiceRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private DeleteOutcomeInvoiceCommandHandler CreateSut() => new(_invoices, _uow);
+    private DeleteOutcomeInvoiceCommandHandler CreateSut() => new(_invoices, _uow, NullLogger<DeleteOutcomeInvoiceCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenNotFound_ReturnsNotFound()
@@ -147,7 +148,7 @@ public class UploadOutcomeInvoiceAttachmentCommandHandlerTests
     private readonly IImageService _images = Substitute.For<IImageService>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private UploadOutcomeInvoiceAttachmentCommandHandler CreateSut() => new(_invoices, _images, _uow);
+    private UploadOutcomeInvoiceAttachmentCommandHandler CreateSut() => new(_invoices, _images, _uow, NullLogger<UploadOutcomeInvoiceAttachmentCommandHandler>.Instance);
 
     private static UploadOutcomeInvoiceAttachmentCommand Command(Guid invoiceId) =>
         new(invoiceId, Stream.Null, "receipt.png", "image/png", 1024);
@@ -217,7 +218,7 @@ public class OutcomeInvoiceQueryHandlersTests
     {
         _invoices.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((OutcomeInvoice?)null);
 
-        var result = await new GetOutcomeInvoiceByIdQueryHandler(_invoices)
+        var result = await new GetOutcomeInvoiceByIdQueryHandler(_invoices, NullLogger<GetOutcomeInvoiceByIdQueryHandler>.Instance)
             .Handle(new GetOutcomeInvoiceByIdQuery(Guid.NewGuid()), default);
 
         Assert.Equal(OutcomeInvoiceErrors.NotFound, result.Error);
@@ -229,7 +230,7 @@ public class OutcomeInvoiceQueryHandlersTests
         var invoice = OutcomeInvoiceTestData.Make();
         _invoices.GetByIdAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
 
-        var result = await new GetOutcomeInvoiceByIdQueryHandler(_invoices)
+        var result = await new GetOutcomeInvoiceByIdQueryHandler(_invoices, NullLogger<GetOutcomeInvoiceByIdQueryHandler>.Instance)
             .Handle(new GetOutcomeInvoiceByIdQuery(invoice.Id), default);
 
         Assert.True(result.IsSuccess);
@@ -247,7 +248,7 @@ public class OutcomeInvoiceQueryHandlersTests
         var paged = PagedResult<OutcomeInvoice>.Create(new List<OutcomeInvoice> { OutcomeInvoiceTestData.Make() }, 1, 1, 20);
         _invoices.GetPagedAsync(Arg.Any<PagedRequest>(), branchId, Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await new GetAllOutcomeInvoicesQueryHandler(_invoices, userContext, branchContext)
+        var result = await new GetAllOutcomeInvoicesQueryHandler(_invoices, userContext, branchContext, NullLogger<GetAllOutcomeInvoicesQueryHandler>.Instance)
             .Handle(new GetAllOutcomeInvoicesQuery(new PagedRequest()), default);
 
         Assert.True(result.IsSuccess);

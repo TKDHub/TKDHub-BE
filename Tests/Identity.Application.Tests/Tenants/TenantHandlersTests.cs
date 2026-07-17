@@ -31,7 +31,7 @@ public class CreateTenantCommandHandlerTests
     private readonly ITenantRepository _tenants = Substitute.For<ITenantRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private CreateTenantCommandHandler CreateSut() => new(_tenants, _uow);
+    private CreateTenantCommandHandler CreateSut() => new(_tenants, _uow, NullLogger<CreateTenantCommandHandler>.Instance);
 
     private static TenantModel ValidModel() => new()
     {
@@ -111,7 +111,7 @@ public class GetTenantByIdQueryHandlerTests
     {
         _tenants.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Tenant?)null);
 
-        var result = await new GetTenantByIdQueryHandler(_tenants)
+        var result = await new GetTenantByIdQueryHandler(_tenants, NullLogger<GetTenantByIdQueryHandler>.Instance)
             .Handle(new GetTenantByIdQuery(Guid.NewGuid()), default);
 
         Assert.True(result.IsFailure);
@@ -135,7 +135,7 @@ public class GetTenantByIdQueryHandlerTests
         };
         _tenants.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(tenant);
 
-        var result = await new GetTenantByIdQueryHandler(_tenants)
+        var result = await new GetTenantByIdQueryHandler(_tenants, NullLogger<GetTenantByIdQueryHandler>.Instance)
             .Handle(new GetTenantByIdQuery(id), default);
 
         Assert.True(result.IsSuccess);
@@ -262,7 +262,7 @@ public class GetAllTenantsQueryHandlerTests
         var paged = PagedResult<Tenant>.Create(new List<Tenant> { TenantTestData.Make() }, totalCount: 1, page: 1, pageSize: 20);
         _tenants.GetPagedAsync(Arg.Any<PagedRequest>(), Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await new GetAllTenantsQueryHandler(_tenants)
+        var result = await new GetAllTenantsQueryHandler(_tenants, NullLogger<GetAllTenantsQueryHandler>.Instance)
             .Handle(new GetAllTenantsQuery(new PagedRequest()), default);
 
         Assert.True(result.IsSuccess);
@@ -280,7 +280,7 @@ public class GetTenantBySubdomainQueryHandlerTests
     {
         _tenants.GetBySubdomainAsync("nope", Arg.Any<CancellationToken>()).Returns((Tenant?)null);
 
-        var result = await new GetTenantBySubdomainQueryHandler(_tenants)
+        var result = await new GetTenantBySubdomainQueryHandler(_tenants, NullLogger<GetTenantBySubdomainQueryHandler>.Instance)
             .Handle(new GetTenantBySubdomainQuery("nope"), default);
 
         Assert.Equal(TenantErrors.NotFound, result.Error);
@@ -291,7 +291,7 @@ public class GetTenantBySubdomainQueryHandlerTests
     {
         _tenants.GetBySubdomainAsync("acme", Arg.Any<CancellationToken>()).Returns(TenantTestData.Make(subdomain: "acme"));
 
-        var result = await new GetTenantBySubdomainQueryHandler(_tenants)
+        var result = await new GetTenantBySubdomainQueryHandler(_tenants, NullLogger<GetTenantBySubdomainQueryHandler>.Instance)
             .Handle(new GetTenantBySubdomainQuery("acme"), default);
 
         Assert.True(result.IsSuccess);

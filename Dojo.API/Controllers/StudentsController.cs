@@ -132,7 +132,9 @@ public class StudentsController(ISender sender, IBranchContext branchContext, IT
         await using var stream = image.OpenReadStream();
 
         var result = await sender.Send(
-            new UploadStudentImageCommand(id, stream, image.FileName, image.ContentType, image.Length),
+            new UploadStudentImageCommand(
+                id, stream, image.FileName, image.ContentType, image.Length,
+                GetUserEmailFromClaims(), GetUserNameFromClaims()),
             cancellationToken);
 
         if (result.IsFailure)
@@ -151,7 +153,9 @@ public class StudentsController(ISender sender, IBranchContext branchContext, IT
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteStudent(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new DeleteStudentCommand(id), cancellationToken);
+        var result = await sender.Send(
+            new DeleteStudentCommand(id, GetUserEmailFromClaims(), GetUserNameFromClaims()),
+            cancellationToken);
 
         if (result.IsFailure)
             return result.Error == StudentErrors.NotFound
@@ -159,5 +163,102 @@ public class StudentsController(ISender sender, IBranchContext branchContext, IT
                 : BadRequest(new { error = result.Error.Description });
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Freezes a student's membership. Snapshots the days remaining until their EndDate
+    /// so a future unfreeze can resume the clock from where it was paused.
+    /// </summary>
+    [HttpPatch("{id:guid}/freeze")]
+    [RequireSuperAdminOrBranchAdmin]
+    [ProducesResponseType(typeof(StudentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> FreezeStudent(Guid id, CancellationToken cancellationToken = default)
+    {
+        var model = new FreezeStudentModel
+        {
+            StudentId     = id,
+            FrozenByEmail = GetUserEmailFromClaims(),
+            FrozenByName  = GetUserNameFromClaims()
+        };
+
+        var result = await sender.Send(new FreezeStudentCommand(model), cancellationToken);
+
+        if (result.IsFailure)
+        {
+            if (result.Error == StudentErrors.NotFound)
+                return NotFound(new { error = result.Error.Description });
+
+            if (result.Error == StudentErrors.AlreadyFrozen)
+                return Conflict(new { error = result.Error.Description });
+
+            return BadRequest(new { error = result.Error.Description });
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Reactivates a Frozen or Inactive student. A frozen student resumes the clock from the
+    /// days remaining at freeze time; an inactive student re-registers against a subscription
+    /// plan (theirs, unless a different one is given), exactly like a fresh CreateStudent.
+    /// </summary>
+    [HttpPatch("{id:guid}/reactivate")]
+    [RequireSuperAdminOrBranchAdmin]
+    [ProducesResponseType(typeof(StudentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ReactivateStudent(
+        Guid id,
+        [FromBody] ReactivateStudentModel model,
+        CancellationToken cancellationToken = default)
+    {
+        model = model with
+        {
+            StudentId       = id,
+            ModifiedByEmail = GetUserEmailFromClaims(),
+            ModifiedByName  = GetUserNameFromClaims()
+        };
+
+        var result = await sender.Send(new ReactivateStudentCommand(model), cancellationToken);
+
+        if (result.IsFailure)
+        {
+            if (result.Error == StudentErrors.NotFound)
+                return NotFound(new { error = result.Error.Description });
+
+            if (result.Error == StudentErrors.AlreadyActive)
+                return Conflict(new { error = result.Error.Description });
+
+            return BadRequest(new { error = result.Error.Description });
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>Returns a paginated activity log (create/update/freeze/class changes/etc.) for a single student.</summary>
+    [HttpPost("{id:guid}/activity-logs/search")]
+    [RequireSuperAdminOrBranchAdmin]
+    [ProducesResponseType(typeof(PagedResult<StudentActivityLogDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetStudentActivityLogs(
+        Guid id,
+        [FromBody] PagedRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new GetStudentActivityLogsQuery(id, request), cancellationToken);
+
+        if (result.IsFailure)
+            return NotFound(new { error = result.Error.Description });
+
+        return Ok(result.Value);
     }
 }

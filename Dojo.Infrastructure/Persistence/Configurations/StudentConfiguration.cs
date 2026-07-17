@@ -44,6 +44,8 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         // ── Membership ───────────────────────────────────────────────
         builder.Property(s => s.StartDate).IsRequired();
 
+        builder.Property(s => s.EndDate).IsRequired();
+
         builder.Property(s => s.BeltLevel)
             .IsRequired()
             .HasConversion<short>();
@@ -54,6 +56,11 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
             .WithMany(p => p.Students)
             .HasForeignKey(s => s.SubscriptionPlanId)
             .OnDelete(DeleteBehavior.Restrict);   // archiving a plan must not cascade-delete students
+
+        // Class ↔ Student relationship (one class has many students) is configured on the
+        // Class side in ClassConfiguration; this index just speeds up roster lookups by class.
+        builder.HasIndex(s => s.ClassId)
+            .HasDatabaseName("IX_Students_ClassId");
 
         // ── Snapshot ─────────────────────────────────────────────────
         builder.Property(s => s.Price)
@@ -69,6 +76,10 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         // ── Optional ─────────────────────────────────────────────────
         builder.Property(s => s.ProfileImageUrl).HasMaxLength(500);  // Cloudflare Images URL
         builder.Property(s => s.EmergencyContact).HasMaxLength(200);
+
+        // ── Freeze audit ─────────────────────────────────────────────
+        builder.Property(s => s.FrozenByEmail).HasMaxLength(150);
+        builder.Property(s => s.FrozenByName).HasMaxLength(150);
 
         // ── Computed ─────────────────────────────────────────────────
         builder.Ignore(s => s.FullName);

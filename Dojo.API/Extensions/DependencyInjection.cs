@@ -1,9 +1,9 @@
 using Dojo.Application.Commands.Students;
 using Dojo.Infrastructure;
 using Dojo.Infrastructure.Persistence;
-using Dojo.API.Settings;
 using Shared.Infrastructure;
 using Shared.Infrastructure.Extensions;
+using Shared.Infrastructure.Settings;
 
 namespace Dojo.API.Extensions
 {

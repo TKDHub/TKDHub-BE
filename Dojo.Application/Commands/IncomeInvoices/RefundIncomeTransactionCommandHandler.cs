@@ -4,6 +4,7 @@ using Dojo.Application.Models.IncomeInvoice;
 using Dojo.Domain.Constants;
 using Dojo.Domain.Enums;
 using Dojo.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 using Shared.Application.Messaging;
 using Shared.Domain.Primitives;
 
@@ -22,30 +23,46 @@ internal sealed class RefundIncomeTransactionCommandHandler : ICommandHandler<Re
 {
     private readonly IIncomeInvoiceRepository _invoiceRepository;
     private readonly IUnitOfWork              _unitOfWork;
+    private readonly ILogger<RefundIncomeTransactionCommandHandler> _logger;
 
-    public RefundIncomeTransactionCommandHandler(IIncomeInvoiceRepository invoiceRepository, IUnitOfWork unitOfWork)
+    public RefundIncomeTransactionCommandHandler(IIncomeInvoiceRepository invoiceRepository, IUnitOfWork unitOfWork, ILogger<RefundIncomeTransactionCommandHandler> logger)
     {
         _invoiceRepository = invoiceRepository;
         _unitOfWork        = unitOfWork;
+        _logger             = logger;
     }
 
     public async Task<Result<IncomeInvoiceDto>> Handle(RefundIncomeTransactionCommand request, CancellationToken cancellationToken)
     {
         var model = request.Model;
+        _logger.LogInformation("RefundIncomeTransaction: starting for invoice {InvoiceId}, transaction {TransactionId}, amount {Amount}",
+            model.InvoiceId, model.TransactionId, model.Amount);
 
         var invoice = await _invoiceRepository.GetByIdAsync(model.InvoiceId, cancellationToken);
         if (invoice is null)
+        {
+            _logger.LogInformation("RefundIncomeTransaction: invoice {InvoiceId} not found", model.InvoiceId);
             return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.NotFound);
+        }
 
         if (invoice.Status == IncomeInvoiceStatusEnum.Voided)
+        {
+            _logger.LogInformation("RefundIncomeTransaction: rejected — invoice {InvoiceId} already voided", invoice.Id);
             return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.CannotRefundVoidedInvoice);
+        }
 
         var original = invoice.Transactions.FirstOrDefault(t => t.Id == model.TransactionId);
         if (original is null)
+        {
+            _logger.LogInformation("RefundIncomeTransaction: transaction {TransactionId} not found on invoice {InvoiceId}", model.TransactionId, invoice.Id);
             return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.TransactionNotFound);
+        }
 
         if (original.Status != IncomeTransactionStatusEnum.Paid)
+        {
+            _logger.LogInformation("RefundIncomeTransaction: rejected — transaction {TransactionId} is not Paid", original.Id);
             return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.TransactionNotPaid);
+        }
 
         var alreadyRefunded = invoice.Transactions
             .Where(t => t.Status == IncomeTransactionStatusEnum.Refund && t.RefundOfTransactionId == original.Id)
@@ -53,8 +70,12 @@ internal sealed class RefundIncomeTransactionCommandHandler : ICommandHandler<Re
 
         var refundable = original.Amount - alreadyRefunded;
         if (model.Amount <= 0 || model.Amount > refundable)
+        {
+            _logger.LogInformation("RefundIncomeTransaction: rejected — amount {Amount} invalid against refundable {Refundable}", model.Amount, refundable);
             return Result.Failure<IncomeInvoiceDto>(IncomeInvoiceErrors.RefundAmountInvalid);
+        }
 
+        _logger.LogInformation("RefundIncomeTransaction: adding refund transaction for {Amount}", model.Amount);
         invoice.Transactions.Add(original.ToRefundTransaction(
             model.Amount, model.Reason, model.RefundedByEmail, model.RefundedByName));
 
@@ -72,6 +93,7 @@ internal sealed class RefundIncomeTransactionCommandHandler : ICommandHandler<Re
 
         if (allPaidFullyRefunded)
         {
+            _logger.LogInformation("RefundIncomeTransaction: all transactions now fully refunded — auto-voiding invoice {InvoiceId}", invoice.Id);
             invoice.ApplyVoid(new VoidIncomeInvoiceModel
             {
                 InvoiceId     = invoice.Id,
@@ -86,11 +108,15 @@ internal sealed class RefundIncomeTransactionCommandHandler : ICommandHandler<Re
             invoice.Status = invoice.RemainingAmount <= 0
                 ? IncomeInvoiceStatusEnum.Closed
                 : IncomeInvoiceStatusEnum.Open;
+            _logger.LogInformation("RefundIncomeTransaction: invoice {InvoiceId} status re-derived to {Status}", invoice.Id, invoice.Status);
         }
 
         _invoiceRepository.Update(invoice);
+
+        _logger.LogInformation("RefundIncomeTransaction: saving changes");
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        _logger.LogInformation("RefundIncomeTransaction: succeeded — invoice {InvoiceId}", invoice.Id);
         return Result.Success(invoice.ToDto());
     }
 }

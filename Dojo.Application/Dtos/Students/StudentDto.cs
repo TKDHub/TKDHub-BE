@@ -19,6 +19,8 @@ public sealed class StudentDto
 
     // ── Membership ───────────────────────────────────────────────
     public DateOnly StartDate              { get; init; }
+    /// <summary>StartDate + DurationMonths, computed and persisted at registration/update time.</summary>
+    public DateOnly EndDate                { get; init; }
     public string   BeltLevel              { get; init; } = string.Empty;
     public Guid     SubscriptionPlanId     { get; init; }
     public string   SubscriptionPlanName   { get; init; } = string.Empty;
@@ -28,14 +30,16 @@ public sealed class StudentDto
     public string   Currency       { get; init; } = string.Empty;
     public int      DurationMonths { get; init; }
 
-    // ── Computed ─────────────────────────────────────────────────
-    /// <summary>Derived: StartDate + DurationMonths. Never stored in the database.</summary>
-    public DateOnly EndDate => StartDate.AddMonths(DurationMonths);
-
     // ── Optional ─────────────────────────────────────────────────
     public string? ProfileImageUrl { get; init; }
     public string? EmergencyContact { get; init; }
 
     // ── Status ───────────────────────────────────────────────────
     public string Status { get; init; } = string.Empty;
+
+    // ── Freeze audit (populated only when Status == Frozen) ──────
+    public DateOnly? FrozenOn              { get; init; }
+    public string?   FrozenByEmail         { get; init; }
+    public string?   FrozenByName          { get; init; }
+    public int?      RemainingDurationDays { get; init; }
 }

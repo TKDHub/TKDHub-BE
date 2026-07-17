@@ -1,9 +1,10 @@
 using Identity.Application.Models.Auth;
 using Identity.Domain.Constants;
-using Identity.Domain.Enums;
 using Identity.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Messaging;
+using Shared.Domain.Constants;
+using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
 
 namespace Identity.Application.Commands.Authentications
@@ -29,6 +30,7 @@ namespace Identity.Application.Commands.Authentications
         public async Task<Result<string>> Handle(VerifyOtpCommand request, CancellationToken cancellationToken)
         {
             var identifier = request.model.Identifier.Trim();
+            _logger.LogInformation("VerifyOtp: starting for {Type} identifier", request.model.Type);
 
             var user = request.model.Type == IdentifierType.Email
                 ? await _userRepository.GetByEmailAsync(identifier, cancellationToken)
@@ -39,14 +41,18 @@ namespace Identity.Application.Commands.Authentications
                 || user.PasswordResetTokenExpiryTime is null
                 || user.PasswordResetTokenExpiryTime < DateTime.UtcNow)
             {
+                _logger.LogInformation("VerifyOtp: rejected — OTP invalid or expired for identifier");
                 return Result.Failure<string>(OtpErrors.InvalidOrExpired);
             }
 
             // Replace the OTP with a reset token to signal verification is complete
+            _logger.LogInformation("VerifyOtp: OTP verified for user {UserId}, issuing reset token", user.Id);
             user.PasswordResetToken = Guid.NewGuid().ToString();
             user.PasswordResetTokenExpiryTime = DateTime.UtcNow.AddMinutes(OtpPolicy.ResetTokenExpiryMinutes);
 
             _userRepository.Update(user);
+
+            _logger.LogInformation("VerifyOtp: saving changes");
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("OTP verified for {Identifier}", identifier);

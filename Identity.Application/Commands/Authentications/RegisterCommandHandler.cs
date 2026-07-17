@@ -42,26 +42,46 @@ namespace Identity.Application.Commands.Authentications
 
         public async Task<Result<RegisterDto>> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Register: starting for tenant {TenantId}", request.model.TenantId);
+
             if (string.IsNullOrWhiteSpace(request.model.Username))
+            {
+                _logger.LogInformation("Register: rejected — username missing");
                 return Result.Failure<RegisterDto>(UserErrors.UsernameRequired);
+            }
 
             if (string.IsNullOrWhiteSpace(request.model.Email))
+            {
+                _logger.LogInformation("Register: rejected — email missing");
                 return Result.Failure<RegisterDto>(UserErrors.EmailRequired);
+            }
 
             if (!IsValidEmail(request.model.Email))
+            {
+                _logger.LogInformation("Register: rejected — invalid email format");
                 return Result.Failure<RegisterDto>(UserErrors.InvalidEmailFormat);
+            }
 
             var tenant = await _tenantRepository.GetByIdAsync(request.model.TenantId, cancellationToken);
             if (tenant is null)
+            {
+                _logger.LogInformation("Register: tenant {TenantId} not found", request.model.TenantId);
                 return Result.Failure<RegisterDto>(TenantErrors.NotFound);
+            }
 
             var usernameExists = await _userRepository.ExistsByUsernameAsync(request.model.Username, cancellationToken);
             if (usernameExists)
+            {
+                _logger.LogInformation("Register: rejected — username already exists");
                 return Result.Failure<RegisterDto>(UserErrors.UsernameAlreadyExists);
+            }
 
             var emailExists = await _userRepository.ExistsByEmailAsync(request.model.Email.Trim().ToLowerInvariant(), cancellationToken);
             if (emailExists)
+            {
+                _logger.LogInformation("Register: rejected — email already registered");
                 return Result.Failure<RegisterDto>(UserErrors.EmailAlreadyExists);
+            }
 
             request.model.PasswordHash = _passwordHasher.HashPassword(request.model.Password);
 
@@ -76,6 +96,7 @@ namespace Identity.Application.Commands.Authentications
 
             if (request.model.BranchIds.Count > 0)
             {
+                _logger.LogInformation("Register: assigning {Count} branch(es) to new user", request.model.BranchIds.Count);
                 foreach (var branchId in request.model.BranchIds)
                 {
                     var branch = await _branchRepository.GetByIdIgnoringFiltersAsync(branchId, cancellationToken);
@@ -85,6 +106,8 @@ namespace Identity.Application.Commands.Authentications
             }
 
             _userRepository.Add(user);
+
+            _logger.LogInformation("Register: saving changes");
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("New user registered: {Username} under tenant {TenantId}", user.Username, user.TenantId);
