@@ -8,10 +8,10 @@ public sealed class ClassDto
     public Guid    TenantId { get; init; }
     public Guid    BranchId { get; init; }
 
-    public string       Name      { get; init; } = string.Empty;
-    public TimeOnly     StartTime { get; init; }
-    public TimeOnly     EndTime   { get; init; }
-    public List<string> Weekdays  { get; init; } = [];
+    public string    Name      { get; init; } = string.Empty;
+    public TimeOnly  StartTime { get; init; }
+    public TimeOnly  EndTime   { get; init; }
+    public List<int> Weekdays  { get; init; } = [];
 
     public int    StudentCount { get; init; }
     public string Status       { get; init; } = string.Empty;

@@ -22,7 +22,7 @@ public static class ClassMappings
             Name         = trainingClass.Name,
             StartTime    = trainingClass.StartTime,
             EndTime      = trainingClass.EndTime,
-            Weekdays     = trainingClass.Weekdays.Select(d => d.ToString()).ToList(),
+            Weekdays     = trainingClass.Weekdays.Select(d => (int)d).ToList(),
             StudentCount = students?.Count
                 ?? trainingClass.Students?.Count(s => s.StatusId == (short)StudentStatusEnum.Active)
                 ?? 0,
