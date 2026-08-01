@@ -27,8 +27,9 @@ RUN dotnet build "Dojo.Worker.csproj" -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish "Dojo.Worker.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Runtime stage — no ASP.NET Core needed, this process never serves HTTP
-FROM mcr.microsoft.com/dotnet/runtime:10.0 AS final
+# Runtime stage — needs the ASP.NET Core shared framework because Shared.Infrastructure
+# pulls it in (e.g. IHttpClientFactory registration), even though this process serves no HTTP itself
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 COPY --from=publish /app/publish .
