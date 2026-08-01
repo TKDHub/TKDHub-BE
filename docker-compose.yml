@@ -1,0 +1,106 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: DojoDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: Identity.API/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__IdentityDatabase: Host=postgres;Port=5432;Database=IdentityDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      ErrorLogSettings__BaseUrl: http://identity-api:8080
+      RestKeySettings__Key: ${REST_KEY}
+      RestKeySettings__HeaderName: X-Rest-Key
+      SmtpSettings__Host: smtp.gmail.com
+      SmtpSettings__Port: "587"
+      SmtpSettings__Username: tkdhubfirebase@gmail.com
+      SmtpSettings__Password: ${SMTP_PASSWORD}
+      SmtpSettings__FromEmail: tkdhubfirebase@gmail.com
+      SmtpSettings__FromName: TKDHub
+      SmtpSettings__UseSsl: "true"
+      WhatsAppSettings__ApiUrl: https://graph.facebook.com/v20.0
+      WhatsAppSettings__PhoneNumberId: ""
+      WhatsAppSettings__AccessToken: ""
+      JwtSettings__Secret: ${JWT_SECRET}
+      JwtSettings__Issuer: IdentityAPI-Dev
+      JwtSettings__Audience: MicroservicesUsers-Dev
+      JwtSettings__ExpiryMinutes: "60"
+    ports:
+      - "8081:8080"
+
+  dojo-api:
+    build:
+      context: .
+      dockerfile: Dojo.API/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DojoDatabase: Host=postgres;Port=5432;Database=DojoDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      IdentityApiSettings__BaseUrl: http://identity-api:8080
+      ErrorLogSettings__BaseUrl: http://identity-api:8080
+      WhatsAppSettings__ApiUrl: https://graph.facebook.com/v20.0
+      WhatsAppSettings__PhoneNumberId: ""
+      WhatsAppSettings__AccessToken: ""
+      CloudinarySettings__CloudName: dlrjvaexg
+      CloudinarySettings__ApiKey: "318563189243923"
+      CloudinarySettings__ApiSecret: ${CLOUDINARY_API_SECRET}
+      RestKeySettings__Key: ${REST_KEY}
+      RestKeySettings__HeaderName: X-Rest-Key
+      JwtSettings__Secret: ${JWT_SECRET}
+      JwtSettings__Issuer: IdentityAPI-Dev
+      JwtSettings__Audience: MicroservicesUsers-Dev
+      JwtSettings__ExpiryMinutes: "60"
+    ports:
+      - "8080:8080"
+
+  dojo-worker:
+    build:
+      context: .
+      dockerfile: Dojo.Worker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__DojoDatabase: Host=postgres;Port=5432;Database=DojoDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      IdentityApiSettings__BaseUrl: http://identity-api:8080
+      ErrorLogSettings__BaseUrl: http://identity-api:8080
+      WhatsAppSettings__ApiUrl: https://graph.facebook.com/v20.0
+      WhatsAppSettings__PhoneNumberId: ""
+      WhatsAppSettings__AccessToken: ""
+      CloudinarySettings__CloudName: dlrjvaexg
+      CloudinarySettings__ApiKey: "318563189243923"
+      CloudinarySettings__ApiSecret: ${CLOUDINARY_API_SECRET}
+      RestKeySettings__Key: ${REST_KEY}
+      RestKeySettings__HeaderName: X-Rest-Key
+
+volumes:
+  pgdata:

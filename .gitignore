@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsddojo-app-spec.yaml
+
+# Deploy secrets (real values live only in the server's .env, never in git)
+.env
