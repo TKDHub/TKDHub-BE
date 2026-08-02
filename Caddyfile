@@ -1,0 +1,7 @@
+dojo.167-235-252-229.sslip.io {
+    reverse_proxy dojo-api:8080
+}
+
+identity.167-235-252-229.sslip.io {
+    reverse_proxy identity-api:8080
+}

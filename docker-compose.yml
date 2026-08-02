@@ -44,8 +44,8 @@ services:
       JwtSettings__Issuer: IdentityAPI-Dev
       JwtSettings__Audience: MicroservicesUsers-Dev
       JwtSettings__ExpiryMinutes: "60"
-    ports:
-      - "8081:8080"
+    expose:
+      - "8080"
 
   dojo-api:
     build:
@@ -75,8 +75,8 @@ services:
       JwtSettings__Issuer: IdentityAPI-Dev
       JwtSettings__Audience: MicroservicesUsers-Dev
       JwtSettings__ExpiryMinutes: "60"
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
 
   dojo-worker:
     build:
@@ -102,5 +102,21 @@ services:
       RestKeySettings__Key: ${REST_KEY}
       RestKeySettings__HeaderName: X-Rest-Key
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - dojo-api
+      - identity-api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:
